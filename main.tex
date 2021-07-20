@@ -36,8 +36,7 @@
 \maketitle
 \begin{abstract}
 Gradient-based learning forms the foundation of modern machine learning,
-and automatic differentiation allows ML practitioners to easily
-compute the gradients necessary for learning.
+and automatic differentiation allows ML practitioners to easily compute gradients.
 While automatic differentiation only costs a constant multiple of the time and space
 required to evaluate a function, it has its limitations.
 In particular, when evaluating a function itself is expensive,
@@ -83,21 +82,25 @@ allowing the input to be discarded during function evaluation.
 This is typically accomplished by ensuring that the input is easily reconstructed from the output,
 restricting the expressivity of layers.
 A third method is implicit differentiation,
-which improves space complexity at the cost of {\color{red}BLANK}.
-Implicit differentiation relies on the implicit function theorem (IFT) \citep{},
+which improves space complexity at the cost of stronger assumptions.
+Implicit differentiation relies on the implicit function theorem (IFT),
 which gives conditions under which derivatives can be computed independent of
 intermediate computation.
-In this report, we will cover the implicit function theorem (IFT),
-discuss the intuition behind implicit differentiation,
-and apply it to reducing the computational cost of taking derivatives through variational inference.
+Implicit differentiation requires a series of equations specified by a relation
+In this report, we will cover the use of the implicit function theorem
+in OptNet \citep{}, which allows us to use the output of an
+optimization problem inside a neural network.
+%and apply it to reducing the computational cost of taking derivatives through variational inference.
 
 \paragraph{Bilevel Optimization}
-(Need to be careful and double check this sentence, since IFT is probably more general than just bilevel opt)
-Informally, applications of implicit differentiation can commonly be formulated as bilevel optimization problems,
-where, for every iteration when solving an outer optimization problem,
+One application of implicit differentiation is bilevel optimization.
+Bilevel optimization problems are, as implied by the name,
+optimization problems with another nested inner optimization problem embedded within.
+Methods for solving bilevel optimization typically proceed iteratively.
+For every iteration when solving the outer optimization problem,
 we must additionally solve an inner optimization problem.
-Some examples of bilevel optimization problems are hyperparameter optimization, metalearning,
-and variational inference.
+Some applications that can be formalted as bilevel optimization problems are
+hyperparameter optimization, metalearning, and variational inference.
 
 Hyperparameter optimization formulates hyperparameter tuning, such as the shrinkage penalty in Lasso,
 as a bilevel optimization problem by computing gradients wrt the penalty through the entire learning procedure
@@ -117,13 +120,155 @@ There is also work on expressing individual layers of a neural network declarati
 as the solution of an optimization problem \citep{optnet,agrawal2019diffcvx,gould2019declarative}.
 This also falls under the umbrella of bilevel optimization, as we have both the outer training loop
 for the whole model and the inner optimization loop for each optimization layer.
-(reword)
 
 \section{The Implicit Function Theorem}
+The Implicit Function Theorem (IFT) has a long history, as well as many applications.
+For an overview of the history of the IFT, see the book by \citet{iftbook}.
 
-% Entries for the entire Anthology, followed by custom entries
+The IFT gives sufficient conditions under which a system of equations the solution $z^*$
+to a system of equations, $F(x, z) = 0$ with $F: \R^n\times\R^m\to\R^m$,
+can locally be written as a function of just $x$, i.e. there exists a solution function $z^*$
+such that $f(x_0, z^*(x_0)) = 0$ in the neighbourhood of a given $x_0\in\dom F$.
+These conditions are as follows:
+\begin{enumerate}
+\item We have a solution point $(x_0, z_0)$ that satisfies the system of equations
+    $F(x_0, z_0) = 0$.
+\item $F$ has at least continuous first derivatives: $F \in \mcC^k$.
+\item The Jacobian of $F$ wrt $z$ evaluated at the solution point $(x_0,z_0)$ is nonsingular:
+    $\det \frac{\partial F}{\partial z} \neq 0$.
+\end{enumerate}
+Given these conditions, we are able to assert the existence of the solution function $z^*(x)$,
+and determine its derivative
+$\frac{\partial z^*}{\partial x} = -[\frac{\partial F(x,z)}{\partial z}]^{-1}
+    \frac{\partial F(x,z)}{\partial x} \Bigr\rvert_{(x,z) = (x_0,z_0)}$
+
+While the IFT has a long history and many applications, we will focus on one particular application,
+where we embed an optimization problem within a neural network.
+The main source for this is OptNet \citep{optnet}.
+It is under this context that we will walk through the conditions and implications of the IFT.
+
+After this, we will cover an application of the IFT to speed up variational inference.
+
+\section{Embedding Optimization inside a Neural Network}
+As a first example, we will replace the softmax layer of a neural network with an equivalent function
+defined as the output of an optimization problem, and derive gradients using the IFT.
+Applying the IFT in this manner consists of three steps:
+\begin{enumerate}
+\item Check the conditions of the IFT.
+\item Compute gradients without explicitly computing the Jacobian
+    (i.e. only compute the Jacobian-vector product).
+\end{enumerate}
+
+We will start by reviewing softmax and its expression as an optimization problem,
+checking the conditions of the IFT hold, then compute gradients efficiently.
+
+\subsection{Softmax}
+Softmax is often used to parameterize categorical distributions within neural networks.
+It is used to parameterize categorical outputs and attention.
+It has its origins in statistical mechanics as well as decision theory, and functions
+as a differentiable surrogate for argmax.
+
+Softmax assumes that we have $n$ items with independent utilities, $\theta \in \R^n$,
+which indicate preferences.
+Softmax then gives the following distribution over these items:
+$p(x) = \frac{\exp(\theta_x)}{\sum_y \exp(\theta_y)}$.
+Interestingly, this arises as the solution of an optimization problem as well \citep{gao2018properties}.
+
+We can formulate argmax over independent utilities as a linear program, namely
+\begin{equation}
+\begin{aligned}
+\mathrm{maximize } \quad & x^\top\theta\\
+\mathrm{subject to } \quad & x^\top \mathbf{1} = 1\\
+& \\
+& x \succeq 0.
+\end{aligned}
+\end{equation}
+Without ties in the utilities $\theta$, the solution $x^*$ to this problem will be a
+one-hot corresponding to the index of the highest item, i.e. the argmax.
+
+Softmax results from solving a regularized version of the above optimization problem:
+\begin{equation}
+\label{eqn:softmax-opt}
+\begin{aligned}
+\mathrm{maximize } \quad & x^\top\theta + H(x)\\
+\mathrm{subject to } \quad & x^\top \mathbf{1} = 1\\
+& x \succeq 0,
+\end{aligned}
+\end{equation}
+where $H(x) = \sum_i x_i \log x_i$ is the entropy.
+
+Our goal will be to rewrite softmax using the IFT and Eqn.~\ref{eqn:softmax-opt}.
+While this is not of practical use, it is a good exercise in applying the methodology
+used in OptNet and differentiable convex optimization layers \citep{optnet,agrawal2019diffcvx}.
+
+\section{Semi-Amortized Variational Inference (POSTPONED)}
+Variational inference has found success in recent applications to generative models,
+in particular by allowing practitioners to depart from conjugate models
+and extend emission models with expressive neural network components.
+The main insight that led to this development is that inference can be amortized through
+the use of an inference network.
+One approach to variational inference, stochastic variational inference (SVI),
+introduces local, independent variational parameters for every instance of hidden variable.
+While flexible, the storage of all variational parameters is expensive, and the optimization
+of each parameter independently slow \citep{}.
+Amortized variational inference (AVI) solves that by instead sharing variational parameters hierarchically
+via an inference network, which in turn generates the local variational parameters \citep{}.
+The resulting local parameters may or may not be subsequently optimized.
+
+Failure to further optimize may result in an amortization gap \citep{}.
+Prior work has shown that this gap can be ameliorated by performing a few steps of
+optimization on the generated local parameters obtained from the inference network,
+and even by propagating gradients through the optimization process.
+Optimizing through the inner optimization problem results in semi-amortized variational inference
+(SAVI) \citep{}.
+
+As our main motivating example, we will examine whether we can apply the IFT to SAVI.
+We will start by formalizing the problem of variational inference for a simple model.
+
+We will start with a model defined by the following generative process,
+used by \citet{dai2020vae} to analyze posterior collapse:
+\begin{enumerate}
+\item Choose a latent code from the prior distribution $z \sim p(z) = N(0, I)$.
+\item Given the code, choose an observation from the emission distribution
+    $x \mid z \sim p_\theta(x \mid z) = N(\mu_x(z, \theta), \gamma I)$,
+\end{enumerate}
+where $\mu_x(z, \theta) \equiv \MLP(z, \theta)$ and $\gamma > 0$ is a hyperparameter.
+This yields the joint distribution $p(x,z) = p(x\mid z)p(z)$.
+
+Since the latent code $z$ is unobserved, training this model would require optimizing the
+evidence $p(x) = \int p(x,z)$.
+However, due to the MLP parameterized $\mu_x$, the integral is intractable.
+Variational inference performs approximate inference by introducing variational distribution
+$q_\phi(z \mid x)$ and maximizing the following lower bound on $\log p(x)$:
+\begin{equation}
+    \log p(x) - \KL{q(z \mid x) || p(z \mid x)}
+    = \Es{q_\phi(z \mid x)}{\log \frac{p_\theta(x,z)}{q_\phi(z\mid x)}} = \mcL(\theta, \phi).
+\end{equation}
+
+(Write out objective in full.)
+
+While SVI introduces local parameters for each instance of $z$,
+and AVI uses a single $q(z \mid x)$ for all instances,
+we will follow the approach of SAVI.
+We will perform inference as follows:
+For each instance $x$, produce local variational parameter
+$z^{(0)} = g(x; \phi)$.
+Obtain $z^*$ by solving $\mcL(\theta, z^{(0)}) = 2$, with (local) optima $\ell^*$.
+Take gradients through the whole procedure,
+i.e. compute $\frac{\partial \ell^*}{\partial \phi}
+= \frac{\partial\ell^*}{\partial z^*}\frac{\partial z^*}{\partial z^{(0)}}
+\frac{\partial z^{(0)}}{\partial \lambda}$.
+The main difficuty lies in computing $\frac{\partial z^*}{\partial z^{(0)}}$.
+(Highlight challenge)
+
+In order to avoid the memory costs of storing all intermediate computation performed
+in a solver, we will instead apply the IFT.
+In order to apply the IFT, we must satisfy the three conditions.
+First, we must have a solution point to a system of equations, $F(x_0, z_0) = 0$.
+In this setting, we will use the KKT conditions of the optimization problem to define $F$.
+
+
 \bibliography{bib}
-%\bibliographystyle{natbib}
 
 \appendix
 
