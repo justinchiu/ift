@@ -143,8 +143,8 @@ $\frac{\partial z^*}{\partial x} = -[\frac{\partial F(x,z)}{\partial z}]^{-1}
     \frac{\partial F(x,z)}{\partial x} \Bigr\rvert_{(x,z) = (x_0,z_0)}$
 
 While the IFT has a long history and many applications, we will focus on one particular application,
-where we embed an optimization problem within a neural network.
-The main source for this is OptNet \citep{optnet}.
+where we embed an optimization problem within a neural network,
+following OptNet \citep{optnet}.
 It is under this context that we will walk through the conditions and implications of the IFT.
 
 After this, we will cover an application of the IFT to speed up variational inference.
@@ -196,12 +196,74 @@ Softmax results from solving a regularized version of the above optimization pro
 \end{equation}
 where $H(x) = \sum_i x_i \log x_i$ is the entropy.
 
-Our goal will be to rewrite softmax using the IFT and Eqn.~\ref{eqn:softmax-opt}.
-While this is not of practical use, it is a good exercise in applying the methodology
+Our goal will be to rewrite softmax using the IFT and the optimization problem in
+Eqn.~\ref{eqn:softmax-opt}.
+While this is not of practical use since there is a closed-form equation
+for softmax, it is a good exercise in applying the methodology
 used in OptNet and differentiable convex optimization layers \citep{optnet,agrawal2019diffcvx}.
 
 \subsection{KKT Conditions}
+Given a convex optimization problem, the KKT conditions determine a system of equations
+that the solution must satisfy \citep{kkt-thesis,kkt}.
+First, we introduce dual variables $u,v$ and write out the Lagrangian:
+$$\mcL(\theta, x, u, v) = x^\top\theta + H(x) + u(x^\top \mathbf{1} - 1) + v^\top x.$$
+We then have the following necessary conditions for a solution $x^*$:
+\begin{equation}
+\begin{aligned}
+\nabla_x \mcL(\theta, x^*,u,v) = 0 && \textrm{(stationarity)}\\
+\diag(v)x^* = 0 && \textrm{(complementary slackness)}\\
+u(x^{*\top} \mathbf{1} - 1) = 0 && \textrm{(primal feasibility)}\\
+u,v > 0 && \textrm{(dual feasibility)}
+\end{aligned}
+\end{equation}
+As we are interested in the solution $x^*$, we focus on the first three conditions
+which give us the system of equations $F(\theta, x)$ in the IFT.
 
+Now, we can check the conditions of the IFT.
+Clearly, any solution $x^*$ must satisfy $F(\theta, x^*) = 0$,
+and $F \in \mcC^1$.
+We must then check that the Jacobian $\frac{dF}{dx}$ is non-singular.
+To do this, we compute the Jacobian via implicit differentiation.
+This allows us to both check if the Jacobian is non-singular,
+as well as compute
+$\frac{\partial x}{\partial \theta} = -[\frac{\partial F(\theta,x)}{\partial x}]^{-1}
+    \frac{\partial F(\theta,x)}{\partial z}$.
+
+In full, the system of equations $F(\theta, x) = 0$ is
+\begin{equation}
+\label{eqn:system}
+\begin{aligned}
+\theta + \log(x) + 1 + u\mathbf{1} + v &= 0\\
+\diag(v)x &= 0\\
+u(x^{\top} \mathbf{1} - 1) &= 0.
+\end{aligned}
+\end{equation}
+Taking the differential of this system yields
+\begin{equation}
+\label{eqn:dsystem}
+\begin{aligned}
+%d\theta + d\log(x) + du\mathbf{1} + dv &= 0\\
+d\theta + \frac{dx}{x} + du\mathbf{1} + dv &= 0\\
+\diag(v)dx + Ixdv &= 0\\
+du(x^\top \mathbf{1} - 1) + u\mathbf{1}dx &= 0.
+\end{aligned}
+\end{equation}
+Rearranging into matrix form,
+\begin{equation}
+\label{eqn:dsystem-matrix}
+\begin{bmatrix}
+\frac{1}{x} & \mathbf{1} & \mathbf{1} \\
+\diag(v) & 0 & Ix \\
+u\mathbf{1} & x^\top\mathbf{1} - 1 & 0
+\end{bmatrix}
+\begin{bmatrix}
+dx \\ du \\ dv
+\end{bmatrix}
+=   
+\begin{bmatrix}
+-d\theta \\ 0 \\ 0
+\end{bmatrix}
+\end{equation}
 
 \section{Semi-Amortized Variational Inference (POSTPONED)}
 Variational inference has found success in recent applications to generative models,
