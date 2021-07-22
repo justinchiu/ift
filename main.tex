@@ -177,8 +177,8 @@ Interestingly, this arises as the solution of an optimization problem as well \c
 We can formulate argmax over independent utilities as a linear program, namely
 \begin{equation}
 \begin{aligned}
-\mathrm{maximize } \quad & x^\top\theta\\
-\mathrm{subject to } \quad & x^\top \mathbf{1} = 1\\
+\textrm{maximize } \quad & x^\top\theta\\
+\textrm{subject to } \quad & x^\top \mathbf{1} = 1\\
 & x \succeq 0.
 \end{aligned}
 \end{equation}
@@ -189,8 +189,8 @@ Softmax results from solving a regularized version of the above optimization pro
 \begin{equation}
 \label{eqn:softmax-opt}
 \begin{aligned}
-\mathrm{maximize } \quad & x^\top\theta + H(x)\\
-\mathrm{subject to } \quad & x^\top \mathbf{1} = 1\\
+\textrm{maximize } \quad & x^\top\theta + H(x)\\
+\textrm{subject to } \quad & x^\top \mathbf{1} = 1\\
 & x \succeq 0,
 \end{aligned}
 \end{equation}
@@ -203,7 +203,7 @@ for softmax, it is a good exercise in applying the methodology
 used in OptNet and differentiable convex optimization layers \citep{optnet,agrawal2019diffcvx}.
 
 \subsection{KKT Conditions}
-Given a convex optimization problem, the KKT conditions determine a system of equations
+Given an optimization problem, the KKT conditions determine a system of equations
 that the solution must satisfy \citep{kkt-thesis,kkt}.
 First, we introduce dual variables $u,v$ and write out the Lagrangian:
 $$\mcL(\theta, x, u, v) = x^\top\theta + H(x) + u(x^\top \mathbf{1} - 1) + v^\top x.$$
@@ -213,48 +213,47 @@ We then have the following necessary conditions for a solution $x^*$:
 \nabla_x \mcL(\theta, x^*,u,v) = 0 && \textrm{(stationarity)}\\
 \diag(v)x^* = 0 && \textrm{(complementary slackness)}\\
 u(x^{*\top} \mathbf{1} - 1) = 0 && \textrm{(primal feasibility)}\\
-u,v > 0 && \textrm{(dual feasibility)}
+u > 0 && \textrm{(dual feasibility)}
 \end{aligned}
 \end{equation}
 As we are interested in the solution $x^*$, we focus on the first three conditions
 which give us the system of equations $F(\theta, x)$ in the IFT.
 
-Now, we can check the conditions of the IFT.
-Clearly, any solution $x^*$ must satisfy $F(\theta, x^*) = 0$,
-and $F \in \mcC^1$.
-We must then check that the Jacobian $\frac{dF}{dx}$ is non-singular.
-To do this, we compute the Jacobian via implicit differentiation.
-This allows us to both check if the Jacobian is non-singular,
-as well as compute
-$\frac{\partial x}{\partial \theta} = -[\frac{\partial F(\theta,x)}{\partial x}]^{-1}
-    \frac{\partial F(\theta,x)}{\partial z}$.
-
 In full, the system of equations $F(\theta, x) = 0$ is
 \begin{equation}
 \label{eqn:system}
 \begin{aligned}
-\theta + \log(x) + 1 + u\mathbf{1} + v &= 0\\
-\diag(v)x &= 0\\
-u(x^{\top} \mathbf{1} - 1) &= 0.
+F_1(\theta,x,u,v) = \theta + \log(x) + 1 + u\mathbf{1} + v &= 0\\
+F_2(\theta,x,u,v) = u(x^{\top} \mathbf{1} - 1) &= 0\\
+F_3(\theta,x,u,v) = \diag(v)x &= 0.
 \end{aligned}
 \end{equation}
-Taking the differential of this system yields
+
+Now, we can check the conditions of the IFT.
+Clearly, any solution $x^*$ must satisfy $F(\theta, x^*) = 0$,
+and $F \in \mcC^1$.
+We must then check that the Jacobian matrix is non-singular,
+as well as compute the derivative
+$\frac{\partial x}{\partial \theta} = -[\frac{\partial F(\theta,x)}{\partial x}]^{-1}
+    \frac{\partial F(\theta,x)}{\partial z}$.
+
+We use implicit differentiation, a method that follows from the IFT.
+Taking the differential of $F(\theta,x,u,v) = 0$ yields
 \begin{equation}
 \label{eqn:dsystem}
 \begin{aligned}
-%d\theta + d\log(x) + du\mathbf{1} + dv &= 0\\
 d\theta + \frac{dx}{x} + du\mathbf{1} + dv &= 0\\
-\diag(v)dx + Ixdv &= 0\\
-du(x^\top \mathbf{1} - 1) + u\mathbf{1}dx &= 0.
+du(x^\top \mathbf{1} - 1) + u\mathbf{1}dx &= 0\\
+\diag(v)dx + \diag(x)dv &= 0.
 \end{aligned}
 \end{equation}
 Rearranging into matrix form,
 \begin{equation}
 \label{eqn:dsystem-matrix}
 \begin{bmatrix}
-\frac{1}{x} & \mathbf{1} & \mathbf{1} \\
-\diag(v) & 0 & Ix \\
-u\mathbf{1} & x^\top\mathbf{1} - 1 & 0
+\diag(x)^{-1} & \mathbf{1} & \eye(n) \\
+u\mathbf{1}^\top & x^\top\mathbf{1} - 1 & 0\\
+\diag(v) & 0 & \diag(x)
 \end{bmatrix}
 \begin{bmatrix}
 dx \\ du \\ dv
@@ -264,6 +263,8 @@ dx \\ du \\ dv
 -d\theta \\ 0 \\ 0
 \end{bmatrix}
 \end{equation}
+
+We then have that 
 
 \section{Semi-Amortized Variational Inference (POSTPONED)}
 Variational inference has found success in recent applications to generative models,
