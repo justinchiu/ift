@@ -194,7 +194,7 @@ Softmax results from solving a regularized version of the above optimization pro
 & x \succeq 0,
 \end{aligned}
 \end{equation}
-where $H(x) = \sum_i x_i \log x_i$ is the entropy.
+where $H(x) = -\sum_i x_i \log x_i$ is the entropy.
 
 Our goal will be to rewrite softmax using the IFT and the optimization problem in
 Eqn.~\ref{eqn:softmax-opt}.
@@ -211,9 +211,9 @@ We then have the following necessary conditions for a solution $x^*$:
 \begin{equation}
 \begin{aligned}
 \nabla_x \mcL(\theta, x^*,u,v) = 0 && \textrm{(stationarity)}\\
-\diag(v)x^* = 0 && \textrm{(complementary slackness)}\\
 u(x^{*\top} \mathbf{1} - 1) = 0 && \textrm{(primal feasibility)}\\
-v > 0 && \textrm{(dual feasibility)}
+\diag(v)x^* = 0 && \textrm{(complementary slackness)}\\
+v \succeq 0 && \textrm{(dual feasibility)}
 \end{aligned}
 \end{equation}
 As we are interested in the solution $x^*$, we focus on the first three conditions
@@ -223,9 +223,9 @@ In full, the system of equations $F(\theta, x) = 0$ is
 \begin{equation}
 \label{eqn:system}
 \begin{aligned}
-F_1(\theta,x,u,v) = \theta + \log(x) + 1 + u\mathbf{1} + v &= 0\\
-F_2(\theta,x,u,v) = u(x^{\top} \mathbf{1} - 1) &= 0\\
-F_3(\theta,x,u,v) = \diag(v)x &= 0.
+\theta + -\log(x) - 1 + u\mathbf{1} + v &= 0\\
+u(x^{\top} \mathbf{1} - 1) &= 0\\
+\diag(v)x &= 0.
 \end{aligned}
 \end{equation}
 
@@ -233,16 +233,13 @@ Now, we can check the conditions of the IFT.
 Clearly, any solution $x^*$ must satisfy $F(\theta, x^*) = 0$,
 and $F \in \mcC^1$.
 We must then check that the Jacobian matrix is non-singular,
-as well as compute the derivative
-$\frac{\partial x}{\partial \theta} = -[\frac{\partial F(\theta,x)}{\partial x}]^{-1}
-    \frac{\partial F(\theta,x)}{\partial z}$.
 
 We use implicit differentiation, a method that follows from the IFT.
 Taking the differential of $F(\theta,x,u,v) = 0$ yields
 \begin{equation}
 \label{eqn:dsystem}
 \begin{aligned}
-d\theta + \frac{dx}{x} + du\mathbf{1} + dv &= 0\\
+d\theta - \frac{dx}{x} + du\mathbf{1} + dv &= 0\\
 du(x^\top \mathbf{1} - 1) + u\mathbf{1}dx &= 0\\
 \diag(v)dx + \diag(x)dv &= 0.
 \end{aligned}
@@ -251,7 +248,7 @@ Rearranging into matrix form,
 \begin{equation}
 \label{eqn:dsystem-matrix}
 \begin{bmatrix}
-\diag(x)^{-1} & \mathbf{1} & \eye(n) \\
+-\diag(x)^{-1} & \mathbf{1} & \eye(n) \\
 u\mathbf{1}^\top & x^\top\mathbf{1} - 1 & 0\\
 \diag(v) & 0 & \diag(x)
 \end{bmatrix}
@@ -263,8 +260,30 @@ dx \\ du \\ dv
 -d\theta \\ 0 \\ 0
 \end{bmatrix}
 \end{equation}
+Since the solution $x^*$ must be feasible, we know that $x^\top\mathbf{1} = 1$ and $u > 0$.
+With the additional information that the domain of $H(x)$
+adds the implicit constraint that $\forall i, x_i > 0$,
+we can deduce that the Jacobian is full rank and therefore has nonzero determinant.
+This shows that the conditions of the IFT hold.
 
-We then have that 
+Now, to find $\frac{dx}{d\theta}$, we compute the block-wise inverse of
+\begin{equation*}
+\begin{bmatrix}
+A & B\\
+C & D
+\end{bmatrix} = 
+\end{equation*}
+where
+\begin{align*}
+A = \begin{bmatrix} -\diag(x)^{-1} & \mathbf{1} \\ u\mathbf{1}^\top & 0 \end{bmatrix}&\qquad\qquad
+B = \begin{bmatrix}\eye(n) \\ 0\end{bmatrix}\\
+C = \begin{bmatrix}\diag(v) & 0\end{bmatrix} &\qquad\qquad
+D = \diag(x)
+\end{align*}
+
+as well as compute the derivative
+$\frac{\partial x}{\partial \theta} = -[\frac{\partial F(\theta,x)}{\partial x}]^{-1}
+    \frac{\partial F(\theta,x)}{\partial z}$.
 
 \section{Semi-Amortized Variational Inference (POSTPONED)}
 Variational inference has found success in recent applications to generative models,
