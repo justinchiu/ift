@@ -88,7 +88,7 @@ which gives conditions under which derivatives can be computed independent of
 intermediate computation.
 Implicit differentiation requires a series of equations specified by a relation
 In this report, we will cover the use of the implicit function theorem
-in OptNet \citep{}, which allows us to use the output of an
+in OptNet \citep{optnet}, which allows us to use the output of an
 optimization problem inside a neural network.
 %and apply it to reducing the computational cost of taking derivatives through variational inference.
 
@@ -119,73 +119,68 @@ applied to the variational parameters during inference.
 There is also work on expressing individual layers of a neural network declaratively
 as the solution of an optimization problem \citep{optnet,agrawal2019diffcvx,gould2019declarative}.
 This also falls under the umbrella of bilevel optimization, as we have both the outer training loop
-for the whole model and the inner optimization loop for each optimization layer.
+and the inner optimization loop for each OptNet layer.
 
 \section{The Implicit Function Theorem}
-The Implicit Function Theorem (IFT) has a long history, as well as many applications.
+The Implicit Function Theorem (IFT) has a long history, as well as many applications
+in a wide variety of fields such as economics and differential geometry.
 For an overview of the history of the IFT, see the book by \citet{iftbook}.
 
-The IFT gives sufficient conditions under which a system of equations the solution $z^*$
-to a system of equations, $F(x, z) = 0$ with $F: \R^n\times\R^m\to\R^m$,
-can locally be written as a function of just $x$, i.e. there exists a solution function $z^*$
-such that $f(x_0, z^*(x_0)) = 0$ in the neighbourhood of a given $x_0\in\dom F$.
+The IFT gives sufficient conditions under which the solution $x$
+to a system of equations, $F(\theta, x) = 0$ with $F: \R^n\times\R^m\to\R^m$,
+can locally be written as a function of just the parameters $\theta$,
+i.e. there exists a solution mapping $x^*$
+such that $f(\theta, x^*(\theta)) = 0$ in the neighbourhood of the particular point
+$\theta\in\dom F$.
 These conditions are as follows:
 \begin{enumerate}
-\item We have a solution point $(x_0, z_0)$ that satisfies the system of equations
-    $F(x_0, z_0) = 0$.
+\item We have a solution point $(\theta, x)$ that satisfies the system of equations
+    $F(\theta, x) = 0$.
 \item $F$ has at least continuous first derivatives: $F \in \mcC^k$.
-\item The Jacobian of $F$ wrt $z$ evaluated at the solution point $(x_0,z_0)$ is nonsingular:
-    $\det \frac{\partial F}{\partial z} \neq 0$.
+\item The Jacobian of $F$ wrt $z$ evaluated at the solution point $(\theta,x)$ is nonsingular:
+    $\det \frac{\partial F}{\partial x} \neq 0$.
 \end{enumerate}
-Given these conditions, we are able to assert the existence of the solution function $z^*(x)$,
+Given these conditions, we are able to assert the existence of the solution mapping $x^*(\theta)$,
 and determine its derivative
-$\frac{\partial z^*}{\partial x} = -[\frac{\partial F(x,z)}{\partial z}]^{-1}
-    \frac{\partial F(x,z)}{\partial x} \Bigr\rvert_{(x,z) = (x_0,z_0)}$
+$\frac{\partial x^*(\theta)}{\partial \theta} = -[\frac{\partial F(\theta,x)}{\partial x}]^{-1}
+    \frac{\partial F(\theta,x)}{\partial \theta}$.
+Rather than directly applying the formula for the
+derivative, we can also use implicit differentiation to compute $\frac{dx^*}{d\theta}$.
 
-While the IFT has a long history and many applications, we will focus on one particular application,
-where we embed an optimization problem within a neural network,
+While the IFT has a long history and many applications, we will focus on one particular application:
+We will use the solution to an optimization problem the output of a layer within a neural network,
 following OptNet \citep{optnet}.
-It is under this context that we will walk through the conditions and implications of the IFT.
-
-After this, we will cover an application of the IFT to speed up variational inference.
+Afterwards, we will cover an application of the IFT to speed up variational inference.
 
 \section{Embedding Optimization inside a Neural Network}
 As a first example, we will replace the softmax layer of a neural network with an equivalent function
-defined as the output of an optimization problem, and derive gradients using the IFT.
+defined as the output of an optimization problem, and derive derivatives using the IFT.
 Applying the IFT in this manner consists of three steps:
 \begin{enumerate}
-\item Check the conditions of the IFT.
-\item Compute gradients without explicitly computing the Jacobian
-    (i.e. only compute the Jacobian-vector product).
+\item Check that the conditions of the IFT hold.
+\item Compute the derivative of the implicit solution mapping wrt the parameters.
 \end{enumerate}
 
+(Say check output and gradient)
 We will start by reviewing softmax and its expression as an optimization problem,
-checking the conditions of the IFT hold, then compute gradients efficiently.
+checking the conditions of the IFT hold, then compute gradients.
+Since the gradient of softmax is known, we can easily verify that the IFT gives
+the correct gradients.
 
 \subsection{Softmax}
-Softmax is often used to parameterize categorical distributions within neural networks.
-It is used to parameterize categorical outputs and attention.
-It has its origins in statistical mechanics as well as decision theory, and functions
+Softmax is often used to parameterize categorical distributions within neural networks,
+such as attention.
+It has its origins in statistical mechanics and decision theory, and functions
 as a differentiable surrogate for argmax.
 
 Softmax assumes that we have $n$ items with independent utilities, $\theta \in \R^n$,
 which indicate preferences.
 Softmax then gives the following distribution over these items:
 $p(x) = \frac{\exp(\theta_x)}{\sum_y \exp(\theta_y)}$.
-Interestingly, this arises as the solution of an optimization problem as well \citep{gao2018properties}.
+Interestingly, softmax arises as the solution of an optimization problem
+as well \citep{gao2018properties}.
 
-We can formulate argmax over independent utilities as a linear program, namely
-\begin{equation}
-\begin{aligned}
-\textrm{maximize } \quad & x^\top\theta\\
-\textrm{subject to } \quad & x^\top \mathbf{1} = 1\\
-& x \succeq 0.
-\end{aligned}
-\end{equation}
-Without ties in the utilities $\theta$, the solution $x^*$ to this problem will be a
-one-hot corresponding to the index of the highest item, i.e. the argmax.
-
-Softmax results from solving a regularized version of the above optimization problem:
+The output of softmax is the solution of the following optimization problem:
 \begin{equation}
 \label{eqn:softmax-opt}
 \begin{aligned}
@@ -195,28 +190,31 @@ Softmax results from solving a regularized version of the above optimization pro
 \end{aligned}
 \end{equation}
 where $H(x) = -\sum_i x_i \log x_i$ is the entropy.
+This corresponds to an entropy-regularized argmax optimization problem.
 
-Our goal will be to rewrite softmax using the IFT and the optimization problem in
-Eqn.~\ref{eqn:softmax-opt}.
-While this is not of practical use since there is a closed-form equation
-for softmax, it is a good exercise in applying the methodology
-used in OptNet and differentiable convex optimization layers \citep{optnet,agrawal2019diffcvx}.
+Our goal is to compute the Jacobian of softmax
+using the IFT and the optimization problem above.
+While this is not of practical use (there is a closed-form equation
+for both softmax and its Jacobian),
+we use it as an introduction to the mechanism
+behind OptNet and differentiable optimization layers
+\citep{optnet,agrawal2019diffcvx}.
 
 \subsection{KKT Conditions}
 Given an optimization problem, the KKT conditions determine a system of equations
 that the solution must satisfy \citep{kkt-thesis,kkt}.
-First, we introduce dual variables $u,v$ and write out the Lagrangian:
+First, we introduce dual variables $u\in\R,v\in\R^n$ and write out the Lagrangian:
 $$\mcL(\theta, x, u, v) = x^\top\theta + H(x) + u(x^\top \mathbf{1} - 1) + v^\top x.$$
-We then have the following necessary conditions for a solution $x^*$:
+We then have the following necessary conditions for a solution $x$:
 \begin{equation}
 \begin{aligned}
-\nabla_x \mcL(\theta, x^*,u,v) = 0 && \textrm{(stationarity)}\\
-u(x^{*\top} \mathbf{1} - 1) = 0 && \textrm{(primal feasibility)}\\
-\diag(v)x^* = 0 && \textrm{(complementary slackness)}\\
+\nabla_x \mcL(\theta, x,u,v) = 0 && \textrm{(stationarity)}\\
+u(x^{\top} \mathbf{1} - 1) = 0 && \textrm{(primal feasibility)}\\
+\diag(v)x = 0 && \textrm{(complementary slackness)}\\
 v \succeq 0 && \textrm{(dual feasibility)}
 \end{aligned}
 \end{equation}
-As we are interested in the solution $x^*$, we focus on the first three conditions
+As we are interested in a solution $x$, we focus on the first three conditions
 which give us the system of equations $F(\theta, x)$ in the IFT.
 
 In full, the system of equations $F(\theta, x) = 0$ is
@@ -229,12 +227,11 @@ u(x^{\top} \mathbf{1} - 1) &= 0\\
 \end{aligned}
 \end{equation}
 
-Now, we can check the conditions of the IFT.
-Clearly, any solution $x^*$ must satisfy $F(\theta, x^*) = 0$,
+Now we can check the conditions of the IFT.
+Clearly, any solution $x$ must satisfy $F(\theta, x) = 0$,
 and $F \in \mcC^1$.
-We must then check that the Jacobian matrix is non-singular,
+We must then check that the Jacobian matrix $\frac{dF}{dx}$ is non-singular.
 
-We use implicit differentiation, a method that follows from the IFT.
 Taking the differential of $F(\theta,x,u,v) = 0$ yields
 \begin{equation}
 \label{eqn:dsystem}
@@ -248,7 +245,7 @@ Rearranging into matrix form,
 \begin{equation}
 \label{eqn:dsystem-matrix}
 \begin{bmatrix}
--\diag(x)^{-1} & \mathbf{1} & \eye(n) \\
+-\diag(x)^{-1} & \mathbf{1} & I_n \\
 u\mathbf{1}^\top & x^\top\mathbf{1} - 1 & 0\\
 \diag(v) & 0 & \diag(x)
 \end{bmatrix}
@@ -266,24 +263,110 @@ adds the implicit constraint that $\forall i, x_i > 0$,
 we can deduce that the Jacobian is full rank and therefore has nonzero determinant.
 This shows that the conditions of the IFT hold.
 
-Now, to find $\frac{dx}{d\theta}$, we compute the block-wise inverse of
+\subsection{The Jacobian of Softmax}
+Now that we have shown that the conditions of the IFT hold,
+we can proceed to compute the Jacobian of softmax by applying the second part of the IFT.
+
+to the version of softmax expressed as an optimization problem in Eqn.~\ref{eqn:softmax-opt}.
+In particular, we are interested in the derivative $\frac{dx}{d\theta}$,
+the derivative of the output of softmax (obtained by solving the optimization problem)
+wrt the parameters $\theta$.
+
+We can solve the system of equations in \ref{eqn:system}
+for the entries of the upper-left block corresponding to $\frac{dx}{d\theta}$,
+i.e. 
+\begin{equation}
+\label{eqn:dsystem-matrix}
+\begin{bmatrix}
+-\diag(x)^{-1} & \mathbf{1} & I_n \\
+u\mathbf{1}^\top & x^\top\mathbf{1} - 1 & 0\\
+\diag(v) & 0 & \diag(x)
+\end{bmatrix}^{-1}
+= 
+\begin{bmatrix}
+\frac{dx}{d\theta} & \cdots \\
+\vdots & \ddots
+\end{bmatrix}
+\end{equation}
+
+we compute the block-wise inverse of
 \begin{equation*}
 \begin{bmatrix}
 A & B\\
 C & D
-\end{bmatrix} = 
+\end{bmatrix}^{-1} = \begin{bmatrix}
+    (A - BD^{-1}C)^{-1} & 0\\
+    0 & (D - CA^{-1}B)^{-1}
+\end{bmatrix}
+\begin{bmatrix}
+    I & -BD^{-1}\\
+    -CA^{-1} & I
+\end{bmatrix}
 \end{equation*}
 where
 \begin{align*}
 A = \begin{bmatrix} -\diag(x)^{-1} & \mathbf{1} \\ u\mathbf{1}^\top & 0 \end{bmatrix}&\qquad\qquad
-B = \begin{bmatrix}\eye(n) \\ 0\end{bmatrix}\\
+B = \begin{bmatrix}I_n \\ 0\end{bmatrix}\\
 C = \begin{bmatrix}\diag(v) & 0\end{bmatrix} &\qquad\qquad
 D = \diag(x)
 \end{align*}
+However, by complementary slackness we have $v = 0$, reducing the above to
+\begin{equation*}
+\begin{bmatrix}
+A & B\\
+C & D
+\end{bmatrix}^{-1} = \begin{bmatrix}
+    A^{-1} & 0\\
+    0 & D^{-1}
+\end{bmatrix}
+\begin{bmatrix}
+    I & -BD^{-1}\\
+    0 & I
+\end{bmatrix}
+\end{equation*}
+We first compute the inverses: $D^{-1} = \diag(1/x)$, and for $A^{-1}$, we use a similar
+block-wise inversion formula.
+Let us denote $A = \begin{bmatrix}E & F \\ G & H\end{bmatrix}$.
+First, we compute the Schur complement of $A$,
+\begin{equation}
+A/E = H - GE^{-1}F = 0 - u\mathbf{1}^\top(-\diag(x))\mathbf{1} = ux^\top\mathbf{1}.
+\end{equation}
+Since $x$ is feasible, we have $A/E = u$.
+Then, we have
+\begin{equation}
+A^{-1} = \begin{bmatrix}
+-\diag(x)^{-1} & \mathbf{1}\\
+u\mathbf{1}^\top & 0
+\end{bmatrix}^{-1}
+=\begin{bmatrix}E & F \\ G & H\end{bmatrix}^{-1}
+= \begin{bmatrix}
+E^{-1} + E^{-1}F(A/E)^{-1}GE^{-1} & -E^{-1}F(A/E)^{-1}\\
+-(A/E)^{-1}GE^{-1} & (A/E)^{-1}
+\end{bmatrix}
+\end{equation}
+Plugging in, we have
+\begin{equation}
+\begin{aligned}
+A^{-1} 
+&= \begin{bmatrix}
+-\diag(x) + (-\diag(x))\mathbf{1}u^{-1}u\mathbf{1}^\top(-\diag(x))
+    & \diag(x)\mathbf{1}u^{-1}\\
+-u^{-1}u\mathbf{1}^\top (-\diag(x)) & u^{-1}
+\end{bmatrix}\\
+&= \begin{bmatrix}
+-\diag(x) + xx^\top
+    & u^{-1}x\\
+    x & u^{-1}
+\end{bmatrix}\\
+\end{aligned}
+\end{equation}
+
+With this, we can finally compute the derivative
+
 
 as well as compute the derivative
 $\frac{\partial x}{\partial \theta} = -[\frac{\partial F(\theta,x)}{\partial x}]^{-1}
-    \frac{\partial F(\theta,x)}{\partial z}$.
+    \frac{\partial F(\theta,x)}{\partial \theta}$.
 
 \section{Semi-Amortized Variational Inference (POSTPONED)}
 Variational inference has found success in recent applications to generative models,
