@@ -107,7 +107,7 @@ as a bilevel optimization problem by computing gradients wrt the penalty through
 of the linear model \citep{lorraine2019implasso}.
 (Other works on hyperparam opt \citep{maclaurin2015reversible,bertrand2020implicit})
 Similarly, metalearning learns the parameters of a model such that is the model is able to quickly
-be adapted to a new task via gradient descent \citep{finn2017maml,rajeswaran2019impmaml}.
+be adapted to a new task via gradient descent \citep{finn2017maml,rajeswaran2019imaml}.
 This is accomplished by differentiating through the learning procedure of each new task.
 Finally, a variant of variational inference follows a very similar format:
 semi-amortized variational inference (SAVI) aims to learn a model that is able to initialize
@@ -276,6 +276,19 @@ adds the implicit constraint that $\forall i, x_i > 0$,
 we can deduce that the Jacobian of $F$ is full rank and therefore has nonzero determinant.
 This shows that the conditions of the IFT hold.
 
+It is important to note that the stationarity condition already used the Jacobian of
+the objective.
+Further differentiating the stationarity condition leads to the Hessian,
+which is much larger than the Jacobian:
+the Jacobian of a scalar function is a vector in $\R^n$,
+while the Hessian is a matrix in $\R^{n \times n}$,
+where $n$ is the number of variables.
+In the case of softmax we will show that we
+can avoid explicitly constructing the Hessian and compute the
+gradient analytically.
+However, in a majority of other cases some form of Hessian (or Hessian-vector-product)
+approximation will be needed \citep{rajeswaran2019imaml,lorraine2019hoift}.
+
 \subsection{The Jacobian of Softmax}
 Now that we have shown that the conditions of the IFT hold,
 we can proceed to apply the second part of the IFT.
@@ -379,7 +392,8 @@ With this, we have shown that we can rewrite softmax as an optimization problem,
 and differentiate the solution of that problem wrt the parameters in a solver-agnostic
 manner.
 
-(Example code showing build-up of memory from reversible SGD vs IFT would be nice here)
+(Example showing build-up of memory from reversible SGD vs IFT would be nice here,
+ie code it up and plot memory consumption / speed. maybe not best example though)
 
 While softmax has an explicit functional form that determines the relationship between
 the parameters $\theta$ and solution $x$, the IFT applies when
@@ -390,8 +404,7 @@ OptNet generalizes the methodology applied above to the softmax problem by
 including parameterized constraints and computing the gradients of the solution
 wrt all parameters.
 This allows us to learn not only the objective, but also the constraints.
-
-Applications?
+Constraint learning has the potential to 
 
 \subsection{Quadratic Programs}
 OptNet applies the IFT to quadratic programs in particular.
