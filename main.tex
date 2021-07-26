@@ -282,19 +282,6 @@ adds the implicit constraint that $\forall i, x_i > 0$,
 we can deduce that the Jacobian of $F$ is full rank and therefore has nonzero determinant.
 This shows that the conditions of the IFT hold.
 
-It is important to note that the stationarity condition already used the Jacobian of
-the objective.
-Further differentiating the stationarity condition leads to the Hessian,
-which is much larger than the Jacobian:
-the Jacobian of a scalar function (i.e. the Lagrangian) is a vector in $\R^n$,
-while the Hessian is a matrix in $\R^{n \times n}$,
-where $n$ is the number of variables.
-In the case of softmax we will show that we
-can avoid explicitly constructing the Hessian and compute the
-gradient analytically.
-However, in a majority of other cases some form of Hessian (or Hessian-vector-product)
-approximation will be needed \citep{rajeswaran2019imaml,lorraine2019hoift}.
-
 \subsection{The Jacobian of Softmax}
 Now that we have shown that the conditions of the IFT hold,
 we can proceed to apply the second part of the IFT.
@@ -401,6 +388,23 @@ manner.
 (Example showing build-up of memory from reversible SGD vs IFT would be nice here,
 ie code it up and plot memory consumption / speed. maybe not best example though)
 
+\subsection{Limitations}
+It is important to note that the stationarity condition already used the Jacobian of
+the objective.
+Further differentiating the stationarity condition leads to the Hessian,
+which is much larger than the Jacobian:
+the Jacobian of a scalar function (i.e. the Lagrangian) is a vector in $\R^n$,
+while the Hessian is a matrix in $\R^{n \times n}$,
+where $n$ is the number of variables.
+In the case of softmax we will show that we
+can avoid explicitly constructing the Hessian and compute the
+gradient analytically.
+However, in a majority of other cases some form of inverse Hessian
+(or inverse-Hessian-vector-product)
+approximation will be needed \citep{rajeswaran2019imaml,lorraine2019hoift}.
+
+
+\subsection{Extensions}
 This can be extended to variations of argmax problems other than the softmax problem as well.
 The softmax problem relaxed the argmax problem by introducing entropy regularization.
 Rather than regularizing with entropy, one could instead 
