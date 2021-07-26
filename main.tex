@@ -407,7 +407,9 @@ approximation will be needed \citep{rajeswaran2019imaml,lorraine2019hoift}.
 \subsection{Extensions}
 This can be extended to variations of argmax problems other than the softmax problem as well.
 The softmax problem relaxed the argmax problem by introducing entropy regularization.
-Rather than regularizing with entropy, one could instead 
+Rather than regularizing with entropy, one could instead alter the objective to find
+the Euclidean projection of the parameters onto the probability simplex,
+resulting in SparseMax \citep{sparsemax}.
 
 While softmax has an explicit functional form that determines the relationship between
 the parameters $\theta$ and solution $x$, the IFT applies when
@@ -437,6 +439,8 @@ Quadratic programs take the following form:
 \end{aligned}
 \end{equation}
 where we optimize over $x$ and the parameters are $\theta = \set{Q, q, A, b, G, h}$.
+Compared to the softmax problem in Eqn.~\ref{eqn:softmax-opt},
+we see that the main difference is just the learnable parameters in the constraints.
 
 \section{Semi-Amortized Variational Inference (POSTPONED)}
 Variational inference has found success in recent applications to generative models,
