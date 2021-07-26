@@ -26,7 +26,7 @@
 \usepackage[utf8]{inputenc}
 
 
-\title{Applications of the Implicit Function Theorem}
+\title{An Introduction to an Application of the Implicit Function Theorem}
 
 \author{Justin Chiu \\
   Cornell Tech \\
@@ -127,18 +127,19 @@ applied to the variational parameters during inference.
 (Other VI papers \citep{vi,johnson2017pgm})
 
 \section{The Implicit Function Theorem}
-The Implicit Function Theorem (IFT) has a long history, as well as many applications
+The implicit function theorem (IFT) has a long history, as well as many applications
 in a wide variety of fields such as economics and differential geometry.
 For an overview of the history of the IFT and some of its classical applications
 in mathematics and economics,
 see the book by \citet{iftbook}.
 
 \subsection{What is the IFT?}
-The classic first example used to introduce the IFT is the unit circle,
-governed by the relation $F(x,y) = x^2 + y^2 - 1 = 0$.
-This relation can be interpreted as a system of equations.
+Consider the unit circle,
+governed by the relation $F(x,y) = x^2 + y^2 - 1 = 0$,
+which can be interpreted as a system of equations.
 As $F$ fails the vertical line test, we cannot write $y$ as a function of $x$ globally.
-However, we can use local parameterizations $f_1(x) = \sqrt{1-y^2}$ if $y > 0$
+This prevents us from taking derivatives, for example $\frac{dy}{dx}$.
+However, we can use local parameterizations: $f_1(x) = \sqrt{1-y^2}$ if $y > 0$
 or $f_2(x) = -\sqrt{1-y^2}$ if $y<0$.
 These local parameterizations then allow us to take derivatives $\frac{dy}{dx}$
 at particular points $(x,y)$ using the corresponding parameterization.
@@ -161,12 +162,14 @@ These conditions are as follows:
 \item The Jacobian of $F$ wrt $x$ evaluated at the solution point $(\theta,x)$ is nonsingular:
     $\det \frac{d F}{d x} \neq 0$.
 \end{enumerate}
-Given these conditions, we are able to assert the existence of the solution mapping $x^*(\theta)$,
+Given these conditions hold for $F,\theta,$ and $x$, we are then
+able to assert the existence of the implicit solution mapping $x^*(\theta)$,
 and determine its derivative
 $\frac{d x^*(\theta)}{d\theta} = -[\frac{dF(\theta,x)}{dx}]^{-1}
     \frac{d F(\theta,x)}{d\theta}$.
 
 \subsection{Why is this useful?}
+
 
 We will apply the IFT to
 use the solution to an optimization problem as the output of a layer within a neural network,
@@ -231,7 +234,7 @@ and we have some solution $x$ to the softmax problem.
 We will then use the IFT to compute gradients of $x$ wrt the parameters $\theta$
 by following the rest of the steps.
 
-\subsection{KKT Conditions}
+\subsection{The KKT conditions determine $F$}
 Given an optimization problem, the KKT conditions determine a system of equations
 that the solution must satisfy \citep{kkt-thesis,kkt}.
 We will use the KKT conditions of the softmax problem in
@@ -295,7 +298,7 @@ then pick out the relevant components.
 
 The second term, $\frac{dF}{d\theta}$, is simple.
 Since $\theta$ only appears in the first vector-valued function of $F$
-(see Eqn.~\ref{eqn:f}), we have
+(see Eqn.~\ref{eqn:system}), we have
 \begin{equation}
 \label{eqn:df-dtheta}
 \frac{dF}{d\theta} = \begin{bmatrix}
@@ -305,7 +308,7 @@ Since $\theta$ only appears in the first vector-valued function of $F$
 \end{equation}
 The large amount of sparsity allows us to skip some computation further down.
 
-Next, we have to invert the Jacobian in Eqn.~\ref{eqn:f-jac}:
+Next, we have to invert the Jacobian from Eqn.~\ref{eqn:f-jac}:
 \begin{equation}
 \label{eqn:dsystem-matrix}
 \left[\frac{dF}{d(x,u,v)}\right]^{-1} = \begin{bmatrix}
