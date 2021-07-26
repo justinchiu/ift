@@ -26,7 +26,7 @@
 \usepackage[utf8]{inputenc}
 
 
-\title{Implicit Differentiation}
+\title{Applications of the Implicit Function Theorem}
 
 \author{Justin Chiu \\
   Cornell Tech \\
@@ -131,13 +131,13 @@ to a system of equations, $F(\theta, x) = 0$ with $F: \R^n\times\R^m\to\R^m$,
 can locally be written as a function of just the parameters $\theta$,
 i.e. there exists a solution mapping $x^*$
 such that $f(\theta, x^*(\theta)) = 0$ in the neighbourhood of the particular point
-$\theta\in\dom F$.
+$\theta\in\dom(F)$.
 These conditions are as follows:
 \begin{enumerate}
 \item We have a solution point $(\theta, x)$ that satisfies the system of equations
     $F(\theta, x) = 0$.
 \item $F$ has at least continuous first derivatives: $F \in \mcC^k$.
-\item The Jacobian of $F$ wrt $z$ evaluated at the solution point $(\theta,x)$ is nonsingular:
+\item The Jacobian of $F$ wrt $x$ evaluated at the solution point $(\theta,x)$ is nonsingular:
     $\det \frac{\partial F}{\partial x} \neq 0$.
 \end{enumerate}
 Given these conditions, we are able to assert the existence of the solution mapping $x^*(\theta)$,
