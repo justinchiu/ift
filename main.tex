@@ -82,11 +82,13 @@ allowing the input to be discarded during function evaluation.
 This is typically accomplished by ensuring that the input is easily reconstructed from the output,
 restricting the expressivity of layers.
 A third method is implicit differentiation,
-which improves space complexity at the cost of stronger assumptions.
+which potentially improves space complexity at the cost of stronger assumptions.
 Implicit differentiation relies on the implicit function theorem (IFT),
 which gives conditions under which derivatives can be computed independent of
 intermediate computation.
-Implicit differentiation requires a series of equations specified by a relation
+The primary condition is the characterization of the output as the solution
+to a series of equations.
+
 In this report, we will cover the use of the implicit function theorem
 in OptNet \citep{optnet}, which allows us to use the output of an
 optimization problem inside a neural network.
@@ -99,9 +101,16 @@ optimization problems with another nested inner optimization problem embedded wi
 Methods for solving bilevel optimization typically proceed iteratively.
 For every iteration when solving the outer optimization problem,
 we must additionally solve an inner optimization problem.
-Some applications that can be formalted as bilevel optimization problems are
-hyperparameter optimization, metalearning, and variational inference.
 
+The application we focus on in this report is expressing individual layers of a neural network declaratively
+as the solution of an optimization problem \citep{optnet,agrawal2019diffcvx,gould2019declarative}.
+This allows model to learn, without heavy manual specification, the constraints of the problem
+in addition to the parameters of the objective.
+We will discuss this in further detail later on in the report,
+when we go over OptNet \citep{optnet}.
+
+Other applications that can be formulated as bilevel optimization problems are
+hyperparameter optimization, metalearning, and variational inference.
 Hyperparameter optimization formulates hyperparameter tuning, such as the shrinkage penalty in Lasso,
 as a bilevel optimization problem by computing gradients wrt the penalty through the entire learning procedure
 of the linear model \citep{lorraine2019implasso}.
@@ -110,48 +119,59 @@ Similarly, metalearning learns the parameters of a model such that is the model 
 be adapted to a new task via gradient descent \citep{finn2017maml,rajeswaran2019imaml}.
 This is accomplished by differentiating through the learning procedure of each new task.
 Finally, a variant of variational inference follows a very similar format:
-semi-amortized variational inference (SAVI) aims to learn a model that is able to initialize
-variational parameters \citep{kim2018savi}.
+semi-amortized variational inference (SAVI) aims to learn a model that is able to provide
+a good initialization for variational parameters that are subsequently updated
+to maximize a lower bound objective \citep{kim2018savi}.
 This is also accomplished by differentiating through the iterative optimization procedure
 applied to the variational parameters during inference.
 (Other VI papers \citep{vi,johnson2017pgm})
 
-There is also work on expressing individual layers of a neural network declaratively
-as the solution of an optimization problem \citep{optnet,agrawal2019diffcvx,gould2019declarative}.
-This also falls under the umbrella of bilevel optimization, as we have both the outer training loop
-and the inner optimization loop for each OptNet layer.
-
 \section{The Implicit Function Theorem}
 The Implicit Function Theorem (IFT) has a long history, as well as many applications
 in a wide variety of fields such as economics and differential geometry.
-For an overview of the history of the IFT, see the book by \citet{iftbook}.
+For an overview of the history of the IFT and some of its classical applications
+in mathematics and economics,
+see the book by \citet{iftbook}.
 
-The IFT gives sufficient conditions under which the solution $x$
+\subsection{What is the IFT?}
+The classic first example used to introduce the IFT is the unit circle,
+governed by the relation $F(x,y) = x^2 + y^2 - 1 = 0$.
+This relation can be interpreted as a system of equations.
+As $F$ fails the vertical line test, we cannot write $y$ as a function of $x$ globally.
+However, we can use local parameterizations $f_1(x) = \sqrt{1-y^2}$ if $y > 0$
+or $f_2(x) = -\sqrt{1-y^2}$ if $y<0$.
+These local parameterizations then allow us to take derivatives $\frac{dy}{dx}$
+at particular points $(x,y)$ using the corresponding parameterization.
+The IFT generalizes this example, and formalizes the conditions under which there exist
+smooth local parameterizations.
+The IFT does not give those local parameterizations, only the derivatives,
+hence the `implicit' in IFT.
+(PICTURE?)
+
+Formally, the IFT gives sufficient conditions under which the solution $x\in\R^n$
 to a system of equations, $F(\theta, x) = 0$ with $F: \R^n\times\R^m\to\R^m$,
 can locally be written as a function of just the parameters $\theta$,
-i.e. there exists a solution mapping $x^*$
-such that $f(\theta, x^*(\theta)) = 0$ in the neighbourhood of the particular point
-$\theta\in\dom(F)$.
+i.e. there exists a solution mapping $x^*:\R^n\to\R^m$
+in the neighbourhood of the particular point $(\theta,x)\in\dom(F)$.
 These conditions are as follows:
 \begin{enumerate}
 \item We have a solution point $(\theta, x)$ that satisfies the system of equations
     $F(\theta, x) = 0$.
 \item $F$ has at least continuous first derivatives: $F \in \mcC^k$.
 \item The Jacobian of $F$ wrt $x$ evaluated at the solution point $(\theta,x)$ is nonsingular:
-    $\det \frac{\partial F}{\partial x} \neq 0$.
+    $\det \frac{d F}{d x} \neq 0$.
 \end{enumerate}
 Given these conditions, we are able to assert the existence of the solution mapping $x^*(\theta)$,
 and determine its derivative
-$\frac{\partial x^*(\theta)}{\partial \theta} = -[\frac{\partial F(\theta,x)}{\partial x}]^{-1}
-    \frac{\partial F(\theta,x)}{\partial \theta}$.
-Rather than directly applying this formula,
-we can use implicit differentiation to compute $\frac{dx^*(\theta)}{d\theta}$
-which is more convenient when performing computation by hand (as we will do).
+$\frac{d x^*(\theta)}{d\theta} = -[\frac{dF(\theta,x)}{dx}]^{-1}
+    \frac{d F(\theta,x)}{d\theta}$.
 
-While the IFT has a long history and many applications, we will focus on one particular application:
-We will use the solution to an optimization problem the output of a layer within a neural network,
+\subsection{Why is this useful?}
+
+We will apply the IFT to
+use the solution to an optimization problem as the output of a layer within a neural network,
 following OptNet \citep{optnet}.
-We will then discuss the problem addressed by this method in OptNet.
+%We will then discuss the problem addressed by this method in OptNet.
 Afterwards, we will cover an application of the IFT to speed up variational inference.
 
 \section{Embedding Optimization inside a Neural Network}
@@ -191,6 +211,7 @@ This corresponds to an entropy-regularized argmax optimization problem.
 We will refer to this as the softmax problem.
 
 Our goal is to compute the Jacobian of softmax
+$\frac{dx}{d\theta} = \frac{d\softmax(\theta)}{d\theta}$
 using the IFT and the optimization problem above.
 While this is not of practical use (there is a closed-form equation
 for both softmax and its Jacobian),
@@ -214,14 +235,12 @@ by following the rest of the steps.
 Given an optimization problem, the KKT conditions determine a system of equations
 that the solution must satisfy \citep{kkt-thesis,kkt}.
 We will use the KKT conditions of the softmax problem in
-Eqn.~\ref{eqn:softmax-opt} to determine $F(\theta,x)$ in the IFT.
+Eqn.~\ref{eqn:softmax-opt} to determine the function $F$ in the IFT.
 
 First, we introduce dual variables $u\in\R,v\in\R^n$ and write out the Lagrangian:
 $$\mcL(\theta, x, u, v) = x^\top\theta + H(x) + u(x^\top \mathbf{1} - 1) + v^\top x.$$
-While we should technically include $u,v$ as solution variables,
-we are mainly concerned with the primal variable $x$ and parameters $\theta$,
-so we will be a bit loose with the word `solution'.
-We then have the following necessary conditions for a solution $x$,
+We include $u,v$ as solution variables.
+We then have the following necessary conditions for a solution $(x,u,v)$,
 i.e. the KKT conditions:
 \begin{equation}
 \begin{aligned}
@@ -234,7 +253,7 @@ v \succeq 0 && \textrm{(dual feasibility)}
 As we are interested in the primal variable or solution $x$,
 we focus on the first three conditions.
 
-In full, the system of equations $F(\theta, x) = 0$ is
+In full, the system of equations $F(\theta, x,u,v) = 0$ is
 \begin{equation}
 \label{eqn:system}
 \begin{aligned}
@@ -245,64 +264,55 @@ u(x^{\top} \mathbf{1} - 1) &= 0\\
 \end{equation}
 
 Now we can check the conditions of the IFT.
-Any solution $x$ will satisfy $F(\theta, x) = 0$,
+Any solution $(x,u,v)$ will satisfy $F(\theta, x,u,v) = 0$,
 and $F \in \mcC^1$.
 All that remains is to check that the Jacobian matrix of $F$ is non-singular.
 
-Taking the differential of $F(\theta,x,u,v) = 0$ yields
+The Jacobian $\frac{dF}{d(x,u,v)}\in\R^{n\times n+1+n}$ is given by
 \begin{equation}
-\label{eqn:dsystem}
-\begin{aligned}
-d\theta - \frac{dx}{x} + du\mathbf{1} + dv &= 0\\
-du(x^\top \mathbf{1} - 1) + u\mathbf{1}dx &= 0\\
-\diag(v)dx + \diag(x)dv &= 0.
-\end{aligned}
-\end{equation}
-Rearranging into matrix form and separating the solution variables $x,u,v$
-from the parameters $\theta$, we have
-\begin{equation}
-\label{eqn:dsystem-matrix}
+\label{eqn:f-jac}
+\frac{dF}{d(x,u,v)}=
 \begin{bmatrix}
 \diag(x)^{-1} & -\mathbf{1} & -I_n \\
 u\mathbf{1}^\top & x^\top\mathbf{1} - 1 & 0\\
 \diag(v) & 0 & \diag(x)
-\end{bmatrix}
-\begin{bmatrix}
-dx \\ du \\ dv
-\end{bmatrix}
-=   
-\begin{bmatrix}
-d\theta \\ 0 \\ 0
-\end{bmatrix},
+\end{bmatrix}.
 \end{equation}
-giving us the Jacobian matrix of $F$ wrt the solution variables.
 Since a solution must be feasible, we know that $x^\top\mathbf{1} = 1$ and $u > 0$.
 With the additional information that the domain of $H(x)$
 adds the implicit constraint that $\forall i, x_i > 0$,
 we can deduce that the Jacobian of $F$ is full rank and therefore has nonzero determinant.
 This shows that the conditions of the IFT hold.
 
+
 \subsection{The Jacobian of Softmax}
 Now that we have shown that the conditions of the IFT hold,
-we can proceed to apply the second part of the IFT.
+we can proceed to apply the second part of the IFT in order to compute $\frac{dx}{d\theta}$.
 The second part of the IFT tells us that we can compute the Jacobian of the
-solution mapping $\frac{dx}{d\theta} = \frac{dx^*(\theta)}{d\theta} $ via implicit differentiation.
+solution mapping $\frac{d(x,u,v)}{d\theta} = \frac{dx^*(\theta)}{d\theta}
+= \left[\frac{dF}{d(x,u,v)}\right]^{-1}\frac{dF}{d\theta}$,
+then pick out the relevant components.
 
-This is accomplished by solving the system of equations above in Eqn.~\ref{eqn:system}
-for the entries of the upper-left $n\times n$ block corresponding to $\frac{dx}{d\theta}$,
-i.e. 
+The second term, $\frac{dF}{d\theta}$, is simple.
+Since $\theta$ only appears in the first vector-valued function of $F$
+(see Eqn.~\ref{eqn:f}), we have
+\begin{equation}
+\label{eqn:df-dtheta}
+\frac{dF}{d\theta} = \begin{bmatrix}
+    I_n\\
+    0
+\end{bmatrix}.
+\end{equation}
+The large amount of sparsity allows us to skip some computation further down.
+
+Next, we have to invert the Jacobian in Eqn.~\ref{eqn:f-jac}:
 \begin{equation}
 \label{eqn:dsystem-matrix}
-\begin{bmatrix}
+\left[\frac{dF}{d(x,u,v)}\right]^{-1} = \begin{bmatrix}
 \diag(x)^{-1} & -\mathbf{1} & -I_n \\
 u\mathbf{1}^\top & x^\top\mathbf{1} - 1 & 0\\
 \diag(v) & 0 & \diag(x)
-\end{bmatrix}^{-1}
-= 
-\begin{bmatrix}
-\frac{dx}{d\theta} & \cdots \\
-\vdots & \ddots
-\end{bmatrix}.
+\end{bmatrix}^{-1}.
 \end{equation}
 We use the block-wise inversion formula
 \begin{equation*}
@@ -339,7 +349,9 @@ C & D
     0 & I
 \end{bmatrix}.
 \end{equation*}
-As we are only interested in $\frac{dx}{d\theta}$,
+As we are interested in computing $\frac{dx}{d\theta}$,
+rather than the full derivative $\frac{d(x,u,v)}{d\theta}$,
+in addition to the sparsity of $\frac{dF}{d\theta}$, 
 we only have to solve for the upper-left $n\times n$ block of $A^{-1}\in\R^{n+1\times n+1}$.
 To do so, we will repeat the same block-wise inverse computation.
 Let us denote $A = \begin{bmatrix}E & F \\ G & H\end{bmatrix}$.
@@ -378,7 +390,7 @@ A^{-1}
 \end{aligned}
 \end{equation}
 Pulling out the top-left $n\times n$ block yields
-the Jacobian $\frac{\partial x}{\partial \theta} = \diag(x) - xx^\top$,
+the Jacobian $\frac{d x}{d\theta} = \diag(x) - xx^\top$,
 which agrees with directly differentiating softmax \citep{sparsemax}.
 
 With this, we have shown that we can rewrite softmax as an optimization problem,
