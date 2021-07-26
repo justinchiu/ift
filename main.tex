@@ -172,8 +172,8 @@ as a differentiable surrogate for argmax.
 
 Softmax assumes that we have $n$ items with independent utilities, $\theta \in \R^n$,
 which indicate preferences.
-Softmax then gives the following distribution over these items:
-$p(x) = \frac{\exp(\theta_x)}{\sum_y \exp(\theta_y)}$.
+Softmax then gives the following distribution over items:
+$x_i = \frac{\exp(\theta_i)}{\sum_j \exp(\theta_j)}$, with $x\in\R^n$.
 Interestingly, softmax arises as the solution of an optimization problem
 \citep{gao2018properties}.
 
