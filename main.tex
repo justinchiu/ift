@@ -197,12 +197,18 @@ for both softmax and its Jacobian),
 we use it as an introduction to the mechanism
 behind OptNet and differentiable optimization layers
 \citep{optnet,agrawal2019diffcvx}.
-Applying the IFT consists of three steps:
+Applying the IFT to optimization problems consists of four steps:
 \begin{enumerate}
+\item Find a solution to the optimization problem.
 \item Write down the system of equations.
 \item Check that the conditions of the IFT hold.
 \item Compute the derivative of the implicit solution mapping wrt the parameters.
 \end{enumerate}
+
+We assume the first step has been done for us,
+and we have some solution $x$ to the softmax problem.
+We will then use the IFT to compute gradients of $x$ wrt the parameters $\theta$
+by following the rest of the steps.
 
 \subsection{KKT Conditions}
 Given an optimization problem, the KKT conditions determine a system of equations
@@ -394,6 +400,10 @@ manner.
 
 (Example showing build-up of memory from reversible SGD vs IFT would be nice here,
 ie code it up and plot memory consumption / speed. maybe not best example though)
+
+This can be extended to variations of argmax problems other than the softmax problem as well.
+The softmax problem relaxed the argmax problem by introducing entropy regularization.
+Rather than regularizing with entropy, one could instead 
 
 While softmax has an explicit functional form that determines the relationship between
 the parameters $\theta$ and solution $x$, the IFT applies when
