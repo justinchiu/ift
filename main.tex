@@ -160,7 +160,7 @@ we will replace the softmax layer of a neural network with an equivalent functio
 defined as the output of an optimization problem, then derive derivatives using the IFT.
 We will start by reviewing softmax and its expression as an optimization problem.
 After checking the conditions of the IFT hold, we can then compute gradients.
-Since the gradient of softmax is known, we can directly verify that the IFT gives
+Since the Jacobian of softmax is known, we can directly verify that the IFT gives
 the correct answer.
 
 
@@ -262,7 +262,7 @@ dx \\ du \\ dv
 \end{bmatrix}
 =   
 \begin{bmatrix}
--d\theta \\ 0 \\ 0
+d\theta \\ 0 \\ 0
 \end{bmatrix},
 \end{equation}
 giving us the Jacobian matrix of $F$ wrt the solution variables.
@@ -369,7 +369,7 @@ A^{-1}
 \end{equation}
 Pulling out the top-left $n\times n$ block yields
 the Jacobian $\frac{\partial x}{\partial \theta} = \diag(x) - xx^\top$,
-which agrees with simply taking the derivative of softmax \citep{sparsemax}.
+which agrees with directly differentiating softmax \citep{sparsemax}.
 
 With this, we have shown that we can rewrite softmax as an optimization problem,
 and differentiate the solution of that problem wrt the parameters in a solver-agnostic
@@ -382,11 +382,27 @@ the parameters $\theta$ and solution $x$, the IFT applies when
 the relationship between parameters and solutions is not explicit.
 
 \section{OptNet}
-\citet{optnet} apply the IFT to quadratic problems in particular.
-The methodology is identical: given a quadratic program (QP),
+OptNet generalizes the methodology applied above to the softmax program by
+including parameterized constraints and computing the gradients of the solution
+wrt all parameters.
+This allows us to learn not only the objective, but also the constraints.
+
+OptNet applies the IFT to quadratic problems in particular.
+The methodology remains the same: given a quadratic program (QP) and a solution,
 use the KKT conditions to produce a system of equations then apply the IFT
-/ implicit differentiation to compute the derivative of the solution wrt parameters.
-This allows 
+/ implicit differentiation to compute the derivative of the solution wrt the
+parameters of the objective and constraints.
+
+Quadratic programs take the following form:
+\begin{equation}
+\label{eqn:qp}
+\begin{aligned}
+\textrm{maximize } \quad & \frac12 x^\top Q x + q^\top x\\
+\textrm{subject to } \quad & Ax = b\\
+& Gx \leq h,
+\end{aligned}
+\end{equation}
+where we optimize over $x$ and the parameters are $\theta = \set{Q, q, A, b, G, h}$.
 
 \section{Semi-Amortized Variational Inference (POSTPONED)}
 Variational inference has found success in recent applications to generative models,
