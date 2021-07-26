@@ -212,6 +212,9 @@ Eqn.~\ref{eqn:softmax-opt} to determine $F(\theta,x)$ in the IFT.
 
 First, we introduce dual variables $u\in\R,v\in\R^n$ and write out the Lagrangian:
 $$\mcL(\theta, x, u, v) = x^\top\theta + H(x) + u(x^\top \mathbf{1} - 1) + v^\top x.$$
+While we should technically include $u,v$ as solution variables,
+we are mainly concerned with the primal variable $x$ and parameters $\theta$,
+so we will be a bit loose with the word `solution'.
 We then have the following necessary conditions for a solution $x$,
 i.e. the KKT conditions:
 \begin{equation}
@@ -222,7 +225,8 @@ u(x^{\top} \mathbf{1} - 1) = 0 && \textrm{(primal feasibility)}\\
 v \succeq 0 && \textrm{(dual feasibility)}
 \end{aligned}
 \end{equation}
-As we are interested in a solution $x$, we focus on the first three conditions.
+As we are interested in the primal variable or solution $x$,
+we focus on the first three conditions.
 
 In full, the system of equations $F(\theta, x) = 0$ is
 \begin{equation}
@@ -382,12 +386,15 @@ the parameters $\theta$ and solution $x$, the IFT applies when
 the relationship between parameters and solutions is not explicit.
 
 \section{OptNet}
-OptNet generalizes the methodology applied above to the softmax program by
+OptNet generalizes the methodology applied above to the softmax problem by
 including parameterized constraints and computing the gradients of the solution
 wrt all parameters.
 This allows us to learn not only the objective, but also the constraints.
 
-OptNet applies the IFT to quadratic problems in particular.
+Applications?
+
+\subsection{Quadratic Programs}
+OptNet applies the IFT to quadratic programs in particular.
 The methodology remains the same: given a quadratic program (QP) and a solution,
 use the KKT conditions to produce a system of equations then apply the IFT
 / implicit differentiation to compute the derivative of the solution wrt the
@@ -470,6 +477,7 @@ In order to apply the IFT, we must satisfy the three conditions.
 First, we must have a solution point to a system of equations, $F(x_0, z_0) = 0$.
 In this setting, we will use the KKT conditions of the optimization problem to define $F$.
 
+\section{Limitations}
 
 \bibliography{bib}
 
