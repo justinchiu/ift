@@ -393,7 +393,8 @@ It is important to note that the stationarity condition already used the Jacobia
 the objective.
 Further differentiating the stationarity condition leads to the Hessian,
 which is much larger than the Jacobian:
-the Jacobian of a scalar function (i.e. the Lagrangian) is a vector in $\R^n$,
+the Jacobian of a scalar function (i.e. the Lagrangian in the case of the softmax problem)
+is a vector in $\R^n$,
 while the Hessian is a matrix in $\R^{n \times n}$,
 where $n$ is the number of variables.
 In the case of softmax we will show that we
@@ -441,6 +442,12 @@ Quadratic programs take the following form:
 where we optimize over $x$ and the parameters are $\theta = \set{Q, q, A, b, G, h}$.
 Compared to the softmax problem in Eqn.~\ref{eqn:softmax-opt},
 we see that the main difference is just the learnable parameters in the constraints.
+As the application of the IFT is almost identical, we will not cover it in detail.
+
+The second contribution of OptNet was the extension of a state-of-the-art interior point
+solver \citep{optnet,}.
+
+\subsection{Solver}
 
 \section{Semi-Amortized Variational Inference (POSTPONED)}
 Variational inference has found success in recent applications to generative models,
