@@ -144,32 +144,29 @@ Given these conditions, we are able to assert the existence of the solution mapp
 and determine its derivative
 $\frac{\partial x^*(\theta)}{\partial \theta} = -[\frac{\partial F(\theta,x)}{\partial x}]^{-1}
     \frac{\partial F(\theta,x)}{\partial \theta}$.
-Rather than directly applying the formula for the
-derivative, we can also use implicit differentiation to compute $\frac{dx^*}{d\theta}$.
+Rather than directly applying this formula,
+we can use implicit differentiation to compute $\frac{dx^*(\theta)}{d\theta}$
+which is more convenient when performing computation by hand (as we will do).
 
 While the IFT has a long history and many applications, we will focus on one particular application:
 We will use the solution to an optimization problem the output of a layer within a neural network,
 following OptNet \citep{optnet}.
+We will then discuss the problem addressed by this method in OptNet.
 Afterwards, we will cover an application of the IFT to speed up variational inference.
 
 \section{Embedding Optimization inside a Neural Network}
-As a first example, we will replace the softmax layer of a neural network with an equivalent function
-defined as the output of an optimization problem, and derive derivatives using the IFT.
-Applying the IFT in this manner consists of three steps:
-\begin{enumerate}
-\item Check that the conditions of the IFT hold.
-\item Compute the derivative of the implicit solution mapping wrt the parameters.
-\end{enumerate}
+As an introductory example,
+we will replace the softmax layer of a neural network with an equivalent function
+defined as the output of an optimization problem, then derive derivatives using the IFT.
+We will start by reviewing softmax and its expression as an optimization problem.
+After checking the conditions of the IFT hold, we can then compute gradients.
+Since the gradient of softmax is known, we can directly verify that the IFT gives
+the correct answer.
 
-(Say check output and gradient)
-We will start by reviewing softmax and its expression as an optimization problem,
-checking the conditions of the IFT hold, then compute gradients.
-Since the gradient of softmax is known, we can easily verify that the IFT gives
-the correct gradients.
 
 \subsection{Softmax}
 Softmax is often used to parameterize categorical distributions within neural networks,
-such as attention.
+such as in attention layers.
 It has its origins in statistical mechanics and decision theory, and functions
 as a differentiable surrogate for argmax.
 
@@ -178,7 +175,7 @@ which indicate preferences.
 Softmax then gives the following distribution over these items:
 $p(x) = \frac{\exp(\theta_x)}{\sum_y \exp(\theta_y)}$.
 Interestingly, softmax arises as the solution of an optimization problem
-as well \citep{gao2018properties}.
+\citep{gao2018properties}.
 
 The output of softmax is the solution of the following optimization problem:
 \begin{equation}
@@ -191,6 +188,7 @@ The output of softmax is the solution of the following optimization problem:
 \end{equation}
 where $H(x) = -\sum_i x_i \log x_i$ is the entropy.
 This corresponds to an entropy-regularized argmax optimization problem.
+We will refer to this as the softmax problem.
 
 Our goal is to compute the Jacobian of softmax
 using the IFT and the optimization problem above.
@@ -199,13 +197,23 @@ for both softmax and its Jacobian),
 we use it as an introduction to the mechanism
 behind OptNet and differentiable optimization layers
 \citep{optnet,agrawal2019diffcvx}.
+Applying the IFT consists of three steps:
+\begin{enumerate}
+\item Write down the system of equations.
+\item Check that the conditions of the IFT hold.
+\item Compute the derivative of the implicit solution mapping wrt the parameters.
+\end{enumerate}
 
 \subsection{KKT Conditions}
 Given an optimization problem, the KKT conditions determine a system of equations
 that the solution must satisfy \citep{kkt-thesis,kkt}.
+We will use the KKT conditions of the softmax problem in
+Eqn.~\ref{eqn:softmax-opt} to determine $F(\theta,x)$ in the IFT.
+
 First, we introduce dual variables $u\in\R,v\in\R^n$ and write out the Lagrangian:
 $$\mcL(\theta, x, u, v) = x^\top\theta + H(x) + u(x^\top \mathbf{1} - 1) + v^\top x.$$
-We then have the following necessary conditions for a solution $x$:
+We then have the following necessary conditions for a solution $x$,
+i.e. the KKT conditions:
 \begin{equation}
 \begin{aligned}
 \nabla_x \mcL(\theta, x,u,v) = 0 && \textrm{(stationarity)}\\
@@ -214,8 +222,7 @@ u(x^{\top} \mathbf{1} - 1) = 0 && \textrm{(primal feasibility)}\\
 v \succeq 0 && \textrm{(dual feasibility)}
 \end{aligned}
 \end{equation}
-As we are interested in a solution $x$, we focus on the first three conditions
-which give us the system of equations $F(\theta, x)$ in the IFT.
+As we are interested in a solution $x$, we focus on the first three conditions.
 
 In full, the system of equations $F(\theta, x) = 0$ is
 \begin{equation}
@@ -228,9 +235,9 @@ u(x^{\top} \mathbf{1} - 1) &= 0\\
 \end{equation}
 
 Now we can check the conditions of the IFT.
-Clearly, any solution $x$ must satisfy $F(\theta, x) = 0$,
+Any solution $x$ will satisfy $F(\theta, x) = 0$,
 and $F \in \mcC^1$.
-We must then check that the Jacobian matrix $\frac{dF}{dx}$ is non-singular.
+All that remains is to check that the Jacobian matrix of $F$ is non-singular.
 
 Taking the differential of $F(\theta,x,u,v) = 0$ yields
 \begin{equation}
@@ -241,11 +248,12 @@ du(x^\top \mathbf{1} - 1) + u\mathbf{1}dx &= 0\\
 \diag(v)dx + \diag(x)dv &= 0.
 \end{aligned}
 \end{equation}
-Rearranging into matrix form,
+Rearranging into matrix form and separating the solution variables $x,u,v$
+from the parameters $\theta$, we have
 \begin{equation}
 \label{eqn:dsystem-matrix}
 \begin{bmatrix}
--\diag(x)^{-1} & \mathbf{1} & I_n \\
+\diag(x)^{-1} & -\mathbf{1} & -I_n \\
 u\mathbf{1}^\top & x^\top\mathbf{1} - 1 & 0\\
 \diag(v) & 0 & \diag(x)
 \end{bmatrix}
@@ -255,30 +263,28 @@ dx \\ du \\ dv
 =   
 \begin{bmatrix}
 -d\theta \\ 0 \\ 0
-\end{bmatrix}
+\end{bmatrix},
 \end{equation}
-Since the solution $x^*$ must be feasible, we know that $x^\top\mathbf{1} = 1$ and $u > 0$.
+giving us the Jacobian matrix of $F$ wrt the solution variables.
+Since a solution must be feasible, we know that $x^\top\mathbf{1} = 1$ and $u > 0$.
 With the additional information that the domain of $H(x)$
 adds the implicit constraint that $\forall i, x_i > 0$,
-we can deduce that the Jacobian is full rank and therefore has nonzero determinant.
+we can deduce that the Jacobian of $F$ is full rank and therefore has nonzero determinant.
 This shows that the conditions of the IFT hold.
 
 \subsection{The Jacobian of Softmax}
 Now that we have shown that the conditions of the IFT hold,
-we can proceed to compute the Jacobian of softmax by applying the second part of the IFT.
+we can proceed to apply the second part of the IFT.
+The second part of the IFT tells us that we can compute the Jacobian of the
+solution mapping $\frac{dx^*(\theta)}{d\theta}$ via implicit differentiation.
 
-to the version of softmax expressed as an optimization problem in Eqn.~\ref{eqn:softmax-opt}.
-In particular, we are interested in the derivative $\frac{dx}{d\theta}$,
-the derivative of the output of softmax (obtained by solving the optimization problem)
-wrt the parameters $\theta$.
-
-We can solve the system of equations in \ref{eqn:system}
-for the entries of the upper-left block corresponding to $\frac{dx}{d\theta}$,
+This is accomplished by solving the system of equations above in Eqn.~\ref{eqn:system}
+for the entries of the upper-left $n\times n$ block corresponding to $\frac{dx}{d\theta}$,
 i.e. 
 \begin{equation}
 \label{eqn:dsystem-matrix}
 \begin{bmatrix}
--\diag(x)^{-1} & \mathbf{1} & I_n \\
+\diag(x)^{-1} & -\mathbf{1} & -I_n \\
 u\mathbf{1}^\top & x^\top\mathbf{1} - 1 & 0\\
 \diag(v) & 0 & \diag(x)
 \end{bmatrix}^{-1}
@@ -286,10 +292,9 @@ u\mathbf{1}^\top & x^\top\mathbf{1} - 1 & 0\\
 \begin{bmatrix}
 \frac{dx}{d\theta} & \cdots \\
 \vdots & \ddots
-\end{bmatrix}
+\end{bmatrix}.
 \end{equation}
-
-we compute the block-wise inverse of
+We use the block-wise inversion formula
 \begin{equation*}
 \begin{bmatrix}
 A & B\\
@@ -301,16 +306,16 @@ C & D
 \begin{bmatrix}
     I & -BD^{-1}\\
     -CA^{-1} & I
-\end{bmatrix}
+\end{bmatrix},
 \end{equation*}
 where
 \begin{align*}
-A = \begin{bmatrix} -\diag(x)^{-1} & \mathbf{1} \\ u\mathbf{1}^\top & 0 \end{bmatrix}&\qquad\qquad
-B = \begin{bmatrix}I_n \\ 0\end{bmatrix}\\
+A = \begin{bmatrix} \diag(x)^{-1} & -\mathbf{1} \\ u\mathbf{1}^\top & 0 \end{bmatrix}&\qquad\qquad
+B = \begin{bmatrix}-I_n \\ 0\end{bmatrix}\\
 C = \begin{bmatrix}\diag(v) & 0\end{bmatrix} &\qquad\qquad
-D = \diag(x)
+D = \diag(x).
 \end{align*}
-However, by complementary slackness we have $v = 0$, reducing the above to
+However, by complementary slackness, we have $v = 0$, reducing the above to
 \begin{equation*}
 \begin{bmatrix}
 A & B\\
@@ -322,51 +327,66 @@ C & D
 \begin{bmatrix}
     I & -BD^{-1}\\
     0 & I
-\end{bmatrix}
+\end{bmatrix}.
 \end{equation*}
-We first compute the inverses: $D^{-1} = \diag(1/x)$, and for $A^{-1}$, we use a similar
-block-wise inversion formula.
+As we are only interested in $\frac{dx}{d\theta}$,
+we only have to solve for the upper-left $n\times n$ block of $A^{-1}\in\R^{n+1\times n+1}$.
+To do so, we will repeat the same block-wise inverse computation.
 Let us denote $A = \begin{bmatrix}E & F \\ G & H\end{bmatrix}$.
 First, we compute the Schur complement of $A$,
 \begin{equation}
-A/E = H - GE^{-1}F = 0 - u\mathbf{1}^\top(-\diag(x))\mathbf{1} = ux^\top\mathbf{1}.
+A/E = H - GE^{-1}F = 0 + u\mathbf{1}^\top\diag(x)\mathbf{1} = ux^\top\mathbf{1}.
 \end{equation}
-Since $x$ is feasible, we have $A/E = u$.
+Since $x$ is feasible, we have $A/E = u$ due to the equality constraints
+($x$ must sum to 1 as a probability mass function).
 Then, we have
 \begin{equation}
 A^{-1} = \begin{bmatrix}
--\diag(x)^{-1} & \mathbf{1}\\
+\diag(x)^{-1} & -\mathbf{1}\\
 u\mathbf{1}^\top & 0
 \end{bmatrix}^{-1}
 =\begin{bmatrix}E & F \\ G & H\end{bmatrix}^{-1}
 = \begin{bmatrix}
 E^{-1} + E^{-1}F(A/E)^{-1}GE^{-1} & -E^{-1}F(A/E)^{-1}\\
 -(A/E)^{-1}GE^{-1} & (A/E)^{-1}
-\end{bmatrix}
+\end{bmatrix}.
 \end{equation}
 Plugging in, we have
 \begin{equation}
 \begin{aligned}
 A^{-1} 
 &= \begin{bmatrix}
--\diag(x) + (-\diag(x))\mathbf{1}u^{-1}u\mathbf{1}^\top(-\diag(x))
+\diag(x) - \diag(x)\mathbf{1}u^{-1}u\mathbf{1}^\top\diag(x)
     & \diag(x)\mathbf{1}u^{-1}\\
--u^{-1}u\mathbf{1}^\top (-\diag(x)) & u^{-1}
+-u^{-1}u\mathbf{1}^\top \diag(x) & u^{-1}
 \end{bmatrix}\\
 &= \begin{bmatrix}
--\diag(x) + xx^\top
+\diag(x) - xx^\top
     & u^{-1}x\\
-    x & u^{-1}
-\end{bmatrix}\\
+    -x^\top & u^{-1}
+\end{bmatrix}.
 \end{aligned}
 \end{equation}
+Pulling out the top-left $n\times n$ block yields
+the Jacobian $\frac{\partial x}{\partial \theta} = \diag(x) - xx^\top$,
+which agrees with simply taking the derivative of softmax \citep{sparsemax}.
 
-With this, we can finally compute the derivative
+With this, we have shown that we can rewrite softmax as an optimization problem,
+and differentiate the solution of that problem wrt the parameters in a solver-agnostic
+manner.
 
+(Example code showing build-up of memory from reversible SGD vs IFT would be nice here)
 
-as well as compute the derivative
-$\frac{\partial x}{\partial \theta} = -[\frac{\partial F(\theta,x)}{\partial x}]^{-1}
-    \frac{\partial F(\theta,x)}{\partial \theta}$.
+While softmax has an explicit functional form that determines the relationship between
+the parameters $\theta$ and solution $x$, the IFT applies when
+the relationship between parameters and solutions is not explicit.
+
+\section{OptNet}
+\citet{optnet} apply the IFT to quadratic problems in particular.
+The methodology is identical: given a quadratic program (QP),
+use the KKT conditions to produce a system of equations then apply the IFT
+/ implicit differentiation to compute the derivative of the solution wrt parameters.
+This allows 
 
 \section{Semi-Amortized Variational Inference (POSTPONED)}
 Variational inference has found success in recent applications to generative models,
