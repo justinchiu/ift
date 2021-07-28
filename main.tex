@@ -257,10 +257,10 @@ we can forget about how we obtained that solution but still compute derivatives.
 
 As an example, say we obtained a solution using gradient descent,
 which from an initial point $\theta = x_0$
-produces $x_1, x_2, ..., x_1000$ if you run it for 1000 iterations.
+produces $x_1, x_2, ..., x_{1000}$ if you run it for 1000 iterations.
 Without the IFT, you would have to store all 1000 $x$'s
 and the computation used to produce them.
-The IFT lets you throw away $x_1$ through $x_999$, and gives you the derivative
+The IFT lets you throw away $x_1$ through $x_{999}$, and gives you the derivative
 $\frac{dx_1000}{dx_0}$.
 
 In particular, we will show how to compute derivatives of the solution of an optimization problem
