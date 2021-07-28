@@ -159,9 +159,13 @@ at particular points $(a,b)$ using the corresponding parameterization.
 See Fig.~\ref{fig:circle} for an illustration.
 The IFT generalizes this example, and formalizes the conditions under which there exist
 smooth local parameterizations for a given relation or system of equations.
-Unlike in this example, the IFT does not give those local parameterizations.
-It only gives the derivatives, leaving the local functions implicit,
-hence the `implicit' in IFT.
+
+While the unit circle in this example has very simple local parameterizations,
+in general local parameterizations can be very complicated: for example
+an unrolled program can be considered a local parameterization.
+Additionally, the IFT does not give the form of the local parameterizations,
+it only guarantees the existence of one around a point and a way to compute its derivative.
+The local parameterization is left implicit, hence the `implicit' in IFT.
 
 \begin{figure}
 %\begin{minipage}{0.48\textwidth}
@@ -384,7 +388,11 @@ Eqn.~\ref{eqn:softmax-opt} to determine the function $F$ in the IFT.
 
 First, we introduce dual variables $u\in\R,v\in\R^n$ and write out the Lagrangian:
 $$\mcL(\theta, x, u, v) = x^\top\theta + H(x) + u(x^\top \mathbf{1} - 1) + v^\top x.$$
-We include $u,v$ as solution variables.
+We include $u,v$ as solution variables.\footnote{
+When the system of equations $F$ is determined by the KKT conditions,
+we must compute the Jacobian wrt both the primal and dual variables,
+i.e. all of $x,u,v$.
+}
 We then have the following necessary conditions for a solution $(x,u,v)$,
 i.e. the KKT conditions:
 \begin{equation}
@@ -431,7 +439,6 @@ adds the implicit constraint that $\forall i, x_i > 0$,
 we can deduce that the Jacobian of $F$ is full rank and therefore has nonzero determinant.
 This shows that the conditions of the IFT hold.
 
-
 \subsection{The Jacobian of Softmax}
 Now that we have shown that the conditions of the IFT hold,
 we can proceed to apply the second part of the IFT in order to compute $\frac{dx}{d\theta}$.
@@ -451,6 +458,8 @@ Since $\theta$ only appears in the first vector-valued function of $F$
 \end{bmatrix}.
 \end{equation}
 The large amount of sparsity allows us to skip some computation further down.
+\footnote{This sparsity is due to the simple constraints in the softmax problem,
+which is no longer available in more general optimization problems.}
 
 Next, we have to invert the Jacobian from Eqn.~\ref{eqn:f-jac}:
 \begin{equation}
