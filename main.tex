@@ -134,7 +134,10 @@ This is also accomplished by differentiating through the iterative optimization 
 applied to the variational parameters during inference.
 (Other VI papers \citep{vi,johnson2017pgm})
 
-{\color{red} finish loop, how does IFT help with these applications}
+In all the above applications, the inner-loop optimization problem is solved
+with an iterative method, except in rare, simple cases.
+The IFT reduces the memory footprint of automatic differentiation,
+which would otherwise be impossible to apply.
 
 \section{The Implicit Function Theorem}
 The implicit function theorem (IFT) has a long history, as well as many applications
