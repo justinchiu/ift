@@ -188,7 +188,8 @@ hence the `implicit' in IFT.
 \begin{subfigure}[b]{0.45\textwidth}
 \centering
 \begin{tikzpicture}[scale=.75]
-\draw (0,0) circle (2);
+%\draw (0,0) circle (2);
+\draw (-2,-2) rectangle (2,2);
 
 \node[circle,fill=black, minimum size=2pt, inner sep=0] (x) at (1,.5) {};
 \node at (x)[above right] {$\theta$};
@@ -208,8 +209,11 @@ While we cannot differentiate the relation directly,
 we can compute derivatives at the point $a_1$ using the local parameterization $f_1(a)=\sqrt{1-b^2}$ that holds
 in a neighbourhood around $a_1$.
 We cannot use the same parameterization at $a_2$ as the derivative is undefined.
-Illustration (b) shows an example relationship between the parameters $\theta$,
+Separately, illustration (b) shows an example relationship between the parameters $\theta$,
 solution $x$, and implicit function $x^*(\theta)$ of the IFT.
+The rectangle depicts a space which, in this example,
+contains both $\theta$ and $x$.
+This is not necessary for the IFT, but simplifies illustration.
 The parameters $\theta$ provide an initial point, which is then iteratively refined
 into solution $x$, shown by the curved line.
 If $x$ satisfies the conditions of the IFT, then the IFT guarantees the
