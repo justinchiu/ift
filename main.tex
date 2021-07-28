@@ -546,7 +546,8 @@ the Euclidean projection of the parameters onto the probability simplex,
 resulting in SparseMax \citep{sparsemax}.
 While the output of softmax variants often have a closed form expression,
 the IFT provides another way of deriving their Jacobians
-and could potentially pave the way for generalizations.
+and could potentially pave the way for generalizations
+that do not have closed-form expressions.
 
 More generally, the IFT can be applied to cases where, unlike softmax,
 we do not have an explicit functional form (i.e., the unit circle),
@@ -557,10 +558,10 @@ as well as the solutions of differential equations \citep{neuralode}.
 
 \section{OptNet}
 OptNet generalizes the methodology applied above to the softmax problem by
-including parameterized constraints and computing the gradients of the solution
-wrt all parameters.
-This allows us to learn not only the objective, but also the constraints.
-Constraint learning allows models with optimization layers to perform well
+extending the optimization problems considered,
+in particular including parameterized constraints.
+This allows us to learn not only the objective, but also the constraints,
+which allows models with optimization layers to perform well
 on tasks with hard constraints, such as learning to play
 Sudoku from only inputs and outputs \citep{optnet}.
 
@@ -568,9 +569,9 @@ Sudoku from only inputs and outputs \citep{optnet}.
 OptNet applies the IFT to quadratic programs (QPs) in particular.
 As one of the first attempts to apply the IFT to differentiable optimization layers in
 neural networks, OptNet targeted QPs due to their status
-as the simplest nonlinear optimization problem (speculation).
+as the simplest nonlinear optimization problem {\color{red}(speculation)}.
 The methodology remains the same as the softmax problem:
-given a QP and a solution,
+Given a QP and a solution,
 use the KKT conditions to produce a system of equations then apply the IFT
 / implicit differentiation to compute the derivative of the solution wrt the
 parameters of the objective and constraints.
@@ -586,7 +587,7 @@ Quadratic programs take the following form:
 \end{equation}
 where we optimize over $x$ and the parameters are $\theta = \set{Q, q, A, b, G, h}$.
 Compared to the softmax problem in Eqn.~\ref{eqn:softmax-opt},
-we see that the main difference is just the learnable parameters in the constraints.
+we see that the main difference is the learnable parameters in the constraints.
 As the application of the IFT is almost identical, we will not cover it in detail.
 
 The second contribution of OptNet was the extension of a state-of-the-art interior point
