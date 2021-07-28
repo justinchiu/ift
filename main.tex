@@ -6,9 +6,13 @@
 
 \usepackage[a4paper, total={6in, 8in}]{geometry}
 
+\usepackage{caption,subcaption}
+
 \usepackage{mystyle}
 
 \usetikzlibrary{calc,patterns,angles,quotes}    
+\usetikzlibrary{decorations.pathmorphing}
+\tikzset{snake it/.style={decorate, decoration=snake}}
 
 \usepackage{natbib}
 \bibliographystyle{abbrvnat}
@@ -155,6 +159,8 @@ hence the `implicit' in IFT.
 
 \begin{figure}
 \centering
+\begin{subfigure}[b]{0.45\textwidth}
+\centering
 \begin{tikzpicture}[scale=.75]
 \draw (0,0) circle (2);
 
@@ -176,13 +182,39 @@ hence the `implicit' in IFT.
 \node at (2,0) (x2)[left] {$x_2$};
 \draw[fill=white] (2,0) circle (2pt);
 \end{tikzpicture}
+\caption{}
+\end{subfigure}
+%\hspace{1em}
+\begin{subfigure}[b]{0.45\textwidth}
+\centering
+\begin{tikzpicture}[scale=.75]
+\draw (0,0) circle (2);
+
+\node[circle,fill=black, minimum size=2pt, inner sep=0] (x) at (1,.5) {};
+\node at (x)[above right] {$\theta$};
+\node[circle,fill=black, minimum size=2pt, inner sep=0] (y) at (-1,-.5) {};
+\node at (y)[below left] {$x$};
+
+\draw[->,snake it] (x)      to [bend right = 45] (y);
+\path[dashed] (x) edge (y) node[midway,below right]{$x^*(\theta)$};
+
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
 \caption{
 \label{fig:circle}
-A circle, defined by the relation $x^2 + y^2 - 1 = 0$.
+Illustration (a) contains circle, defined by the relation $x^2 + y^2 - 1 = 0$.
 While we cannot differentiate the relation directly,
 we can compute derivatives at the point $x_1$ using the local parameterization $f_1(x)=\sqrt{1-y^2}$ that holds
 in a neighbourhood around $x_1$.
 We cannot use the same parameterization at $x_2$ as the derivative is undefined.
+Illustration (b) shows an example relationship between the parameters $\theta$,
+solution $x$, and implicit function $x^*(\theta)$.
+The parameters $\theta$ provide an initial point, which is then iteratively refined
+into solution $x$, shown by the curved line.
+If $x$ satisfies the conditions of the IFT, then the IFT guarantees the
+existence of the implicit solution mapping $x^*(\theta)$,
+and tells us how to compute $\frac{dx*(\theta)}{d\theta}$.
 }
 \end{figure}
 
@@ -513,6 +545,8 @@ solver \citep{optnet}, and its adaptation to parallel machines (GPUs) and batch 
 While outside the scope of this report, see the paper by \citet{optnet} for the details.
 
 \section{Semi-Amortized Variational Inference (POSTPONED)}
+We now pivot to applying the IFT to variational inference.
+
 Variational inference has found success in recent applications to generative models,
 in particular by allowing practitioners to depart from conjugate models
 and extend emission models with expressive neural network components.
@@ -522,11 +556,12 @@ One approach to variational inference, stochastic variational inference (SVI),
 introduces local, independent variational parameters for every instance of hidden variable.
 While flexible, the storage of all variational parameters is expensive, and the optimization
 of each parameter independently slow \citep{}.
-Amortized variational inference (AVI) solves that by instead sharing variational parameters hierarchically
-via an inference network, which in turn generates the local variational parameters \citep{}.
+Amortized variational inference (AVI) solves that by instead using a hierarchical process.
+Variational parameters are produced hierarchically via an inference network,
+which in turn generates the local variational parameters \citep{}.
 The resulting local parameters may or may not be subsequently optimized.
 
-Failure to further optimize may result in an amortization gap \citep{}.
+Failure to further optimize local variational parameters may result in an amortization gap \citep{}.
 Prior work has shown that this gap can be ameliorated by performing a few steps of
 optimization on the generated local parameters obtained from the inference network,
 and even by propagating gradients through the optimization process.
