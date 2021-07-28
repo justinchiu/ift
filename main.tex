@@ -229,6 +229,74 @@ to store in memory for use in automatic differentiation.
 }
 \end{figure}
 
+
+%% MINIPAGE
+\begin{figure}
+\begin{minipage}{0.48\textwidth}
+\centering
+\begin{tikzpicture}[scale=.75]
+\draw (0,0) circle (2);
+
+\node at ($2*({sqrt(2) / 2}, {sqrt(2) / 2})$) (x)[below left] {$a_1$};
+\draw[fill=black] ($2*({sqrt(2) / 2}, {sqrt(2) / 2})$) circle (2pt);
+
+% neighbourhood 
+\draw[ultra thick] ($2*({sqrt(2) / 2}, {sqrt(2) / 2})$) arc(45:60:2);
+\draw[ultra thick] ($2*({sqrt(2) / 2}, {sqrt(2) / 2})$) arc(45:30:2);
+
+
+% tangent
+%\path (2,1) node[point,label={180:P}] {P} at +(120:2){};
+\node at ($2*({sqrt(2) / 2 + .21}, {sqrt(2) / 2 + .21})$) {$\frac{df_1(a_1)}{da}$};
+\draw[thick] ($2*({sqrt(2) / 2 + -.5}, {sqrt(2) / 2 + .5})$) --
+    ($2*({sqrt(2) / 2 + .5}, {sqrt(2) / 2 -.5})$);
+
+% singular point
+\node at (2,0) (x2)[left] {$a_2$};
+\draw[fill=white] (2,0) circle (2pt);
+\end{tikzpicture}
+\caption{
+\label{fig:circle2}
+A circle, defined by the relation $a^2 + b^2 - 1 = 0$.
+While we cannot differentiate the relation directly,
+we can compute derivatives at the point $a_1$ using the local parameterization $f_1(a)=\sqrt{1-b^2}$ that holds
+in a neighbourhood around $a_1$.
+We cannot use the same parameterization at $a_2$ as the derivative is undefined.}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\textwidth}
+\centering
+\begin{tikzpicture}[scale=.75]
+%\draw (0,0) circle (2);
+\draw (-2,-2) rectangle (2,2);
+
+\node[circle,fill=black, minimum size=2pt, inner sep=0] (x) at (1,.5) {};
+\node at (x)[above right] {$\theta$};
+\node[circle,fill=black, minimum size=2pt, inner sep=0] (y) at (-1,-.5) {};
+\node at (y)[below left] {$x$};
+
+\draw[snake it] (x)      to [bend right = 45] (y);
+\path[dashed] (x) edge (y) node[midway,below right]{$x^*(\theta)$};
+
+\end{tikzpicture}
+\label{fig:a}
+\caption{
+An example relationship between the parameters $\theta$,
+solution $x$, and implicit function $x^*(\theta)$ of the IFT.
+The rectangle depicts a space which, in this example,
+contains both $\theta$ and $x$.
+This is not necessary for the IFT, but simplifies illustration.
+The parameters $\theta$ provide an initial point, which is then iteratively refined
+into solution $x$, shown by the curved line.
+If $x$ satisfies the conditions of the IFT, then the IFT guarantees the
+existence of the implicit solution mapping $x^*(\theta)$,
+and tells us how to compute $\frac{dx^*(\theta)}{d\theta}$.
+This is useful if the iterative procedure (squiggly line), is too expensive
+to store in memory for use in automatic differentiation.
+}
+\end{minipage}
+\end{figure}
+
 Formally, the IFT gives sufficient conditions under which the solution $x\in\R^m$
 to a system of equations, $F(\theta, x) = 0$ with $F: \R^n\times\R^m\to\R^m$,
 can locally be written as a function of just the parameters $\theta\in\R^n$,
@@ -282,6 +350,28 @@ We will start by reviewing softmax and its expression as an optimization problem
 After checking the conditions of the IFT hold, we can then compute derivatives.
 Since the Jacobian of softmax is known, we can directly verify that the IFT gives
 the correct answer.
+
+\subsection{The Chain Rule}
+Before we get into the details of softmax, we first setup the learning problem.
+We are interested in training a neural network model that consists of stacks of layers,
+all of which take the output of the previous layer as input.
+In order to train such a model we rely on backpropagation,  also known as reverse mode AD.
+Reverse mode AD propagates error information backward through the network via the chain rule
+for computing derivatives of composite functions.
+Key to this process is the Jacobian matrix of each layer, the matrix of partial derivatives
+of the layer's outputs wrt its inputs.
+
+As an example, let's say we would like to maximize $b = f_3(f_2(f_1(a)))$ with a gradient-based method,
+where $b\in\R$; $f_3:\R^n\to\R$; $f_1,f_2:\R^n\to\R^n$; and $a\in\R^n$.
+We can compute the derivatives of $b$ wrt each layer via the chain rule.
+Focusing on the first layer $f_1$,
+we have $\frac{db}{df_1} = \frac{db}{df_3}\frac{df_3}{df_2}\frac{df_2}{df_1}$,
+where each term is the Jacobian matrix for the respective layer in the denominator.
+These derivatives can then be used to update the parameters of each layer,
+completing one iteration of the learning process.
+
+Given its key role in learning, we will proceed towards computing the Jacobian of softmax
+using the IFT.
 
 \subsection{Softmax}
 Softmax is often used to parameterize categorical distributions within neural networks,
