@@ -300,6 +300,19 @@ We can compute the derivatives of $\ell$ wrt each layer via the chain rule.
 Focusing on $\theta$,
 we have $\frac{d\ell}{d\theta} = \frac{db}{df_2}\frac{df_2}{df_1}\frac{df_1}{d\theta}$,
 where each term is the Jacobian matrix for the respective layer in the denominator.
+For example,
+$$\frac{df_1}{d\theta} = \begin{bmatrix}
+\frac{\partial [f_1]_1}{\partial [\theta]_1} & 
+    \frac{\partial [f_1]_1}{\partial [\theta]_2} &
+    \cdots\\
+\frac{\partial [f_1]_2}{\partial [\theta]_1} & 
+    \frac{\partial [\theta]_2}{\partial [\theta]_2} &
+    \cdots \\
+\vdots & \vdots & \ddots
+\end{bmatrix},
+$$
+is an $n\times n$ matrix where each row corresponds to an output dimension of $f_1$
+and each column an input dimension.
 These derivatives can then be used to update the parameters of each layer,
 completing one iteration of the learning process.
 Thus, we can write modular implementations of layers by providing either Jacobian matrices
@@ -383,11 +396,13 @@ In full, the system of equations $F(\theta, x,u,v) = 0$ is
 \begin{equation}
 \label{eqn:system}
 \begin{aligned}
-\theta + -\log(x) - 1 + u\mathbf{1} + v &= 0\\
-u(x^{\top} \mathbf{1} - 1) &= 0\\
-\diag(v)x &= 0.
+\theta + -\log(x) - 1 + u\mathbf{1}_n + v &= \mathbf{0}_n\\
+u(x^{\top} \mathbf{1}_n - 1) &= 0\\
+\diag(v)x &= \mathbf{0}_n.
 \end{aligned}
 \end{equation}
+Note that the first and third equations are vector-valued.
+Both of their ranges have dimension $n$.
 
 Now we can check the conditions of the IFT.
 Any solution $(x,u,v)$ will satisfy $F(\theta, x,u,v) = 0$,
@@ -399,8 +414,8 @@ The Jacobian $\frac{dF}{d(x,u,v)}\in\R^{n\times n+1+n}$ is given by
 \label{eqn:f-jac}
 \frac{dF}{d(x,u,v)}=
 \begin{bmatrix}
-\diag(x)^{-1} & -\mathbf{1} & -I_n \\
-u\mathbf{1}^\top & x^\top\mathbf{1} - 1 & 0\\
+\diag(x)^{-1} & -\mathbf{1}_n & -I_{n\times n} \\
+u\mathbf{1}_n^\top & x^\top\mathbf{1}_n - 1 & 0\\
 \diag(v) & 0 & \diag(x)
 \end{bmatrix}.
 \end{equation}
@@ -425,8 +440,8 @@ Since $\theta$ only appears in the first vector-valued function of $F$
 \begin{equation}
 \label{eqn:df-dtheta}
 \frac{dF}{d\theta} = \begin{bmatrix}
-    I_n\\
-    0
+    I_{n\times n}\\
+    \mathbf{0}_{(n+1)\times (n+1)}
 \end{bmatrix}.
 \end{equation}
 The large amount of sparsity allows us to skip some computation further down.
@@ -435,8 +450,8 @@ Next, we have to invert the Jacobian from Eqn.~\ref{eqn:f-jac}:
 \begin{equation}
 \label{eqn:dsystem-matrix}
 \left[\frac{dF}{d(x,u,v)}\right]^{-1} = \begin{bmatrix}
-\diag(x)^{-1} & -\mathbf{1} & -I_n \\
-u\mathbf{1}^\top & x^\top\mathbf{1} - 1 & 0\\
+\diag(x)^{-1} & -\mathbf{1}_n & -I_{n\times n} \\
+u\mathbf{1}_n^\top & x^\top\mathbf{1}_n - 1 & 0\\
 \diag(v) & 0 & \diag(x)
 \end{bmatrix}^{-1}.
 \end{equation}
@@ -456,8 +471,8 @@ C & D
 \end{equation*}
 where
 \begin{align*}
-A = \begin{bmatrix} \diag(x)^{-1} & -\mathbf{1} \\ u\mathbf{1}^\top & 0 \end{bmatrix}&\qquad\qquad
-B = \begin{bmatrix}-I_n \\ 0\end{bmatrix}\\
+A = \begin{bmatrix} \diag(x)^{-1} & -\mathbf{1}_n \\ u\mathbf{1}_n^\top & 0 \end{bmatrix}&\qquad\qquad
+B = \begin{bmatrix}-I_{n\times n} \\ 0\end{bmatrix}\\
 C = \begin{bmatrix}\diag(v) & 0\end{bmatrix} &\qquad\qquad
 D = \diag(x).
 \end{align*}
@@ -471,8 +486,8 @@ C & D
     0 & D^{-1}
 \end{bmatrix}
 \begin{bmatrix}
-    I & -BD^{-1}\\
-    0 & I
+    I_{(n+1)\times (n+1)} & -BD^{-1}\\
+    0 & I_{n \times n}
 \end{bmatrix}.
 \end{equation*}
 As we are interested in computing $\frac{dx}{d\theta}$,
@@ -483,15 +498,15 @@ To do so, we will repeat the same block-wise inverse computation.
 Let us denote $A = \begin{bmatrix}E & F \\ G & H\end{bmatrix}$.
 First, we compute the Schur complement of $A$,
 \begin{equation}
-A/E = H - GE^{-1}F = 0 + u\mathbf{1}^\top\diag(x)\mathbf{1} = ux^\top\mathbf{1}.
+A/E = H - GE^{-1}F = 0 + u\mathbf{1}_n^\top\diag(x)\mathbf{1}_n = ux^\top\mathbf{1}_n.
 \end{equation}
 Since $x$ is feasible, we have $A/E = u$ due to the equality constraints
 ($x$ must sum to 1 as a probability mass function).
 Then, we have
 \begin{equation}
 A^{-1} = \begin{bmatrix}
-\diag(x)^{-1} & -\mathbf{1}\\
-u\mathbf{1}^\top & 0
+\diag(x)^{-1} & -\mathbf{1}_n\\
+u\mathbf{1}^\top_n & 0
 \end{bmatrix}^{-1}
 =\begin{bmatrix}E & F \\ G & H\end{bmatrix}^{-1}
 = \begin{bmatrix}
@@ -504,9 +519,9 @@ Plugging in, we have
 \begin{aligned}
 A^{-1} 
 &= \begin{bmatrix}
-\diag(x) - \diag(x)\mathbf{1}u^{-1}u\mathbf{1}^\top\diag(x)
-    & \diag(x)\mathbf{1}u^{-1}\\
--u^{-1}u\mathbf{1}^\top \diag(x) & u^{-1}
+\diag(x) - \diag(x)\mathbf{1}_nu^{-1}u\mathbf{1}^\top_n\diag(x)
+    & \diag(x)\mathbf{1}_nu^{-1}\\
+-u^{-1}u\mathbf{1}^\top_n \diag(x) & u^{-1}
 \end{bmatrix}\\
 &= \begin{bmatrix}
 \diag(x) - xx^\top
