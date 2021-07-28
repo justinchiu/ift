@@ -299,9 +299,9 @@ As an example, let's say we would like to maximize $\ell = f_2(f_1(\theta))$ wit
 where $\ell\in\R$, $f_2:\R^n\to\R$, $f_1:\R^n\to\R^n$, and $\theta\in\R^n$.
 We can compute the derivatives of $\ell$ wrt each layer via the chain rule.
 Focusing on $\theta$,
-we have $\frac{d\ell}{d\theta} = \frac{db}{df_2}\frac{df_2}{df_1}\frac{df_1}{d\theta}$,
+we have $\frac{d\ell}{d\theta} = \frac{d\ell}{df_2}\frac{df_2}{df_1}\frac{df_1}{d\theta}$,
 where each term is the Jacobian matrix for the respective layer in the denominator.
-For example,
+For example, the Jacobian of the first layer $f_1$ is
 $$\frac{df_1}{d\theta} = \begin{bmatrix}
 \frac{\partial [f_1]_1}{\partial [\theta]_1} & 
     \frac{\partial [f_1]_1}{\partial [\theta]_2} &
@@ -313,7 +313,12 @@ $$\frac{df_1}{d\theta} = \begin{bmatrix}
 \end{bmatrix},
 $$
 is an $n\times n$ matrix where each row corresponds to an output dimension of $f_1$
-and each column an input dimension.
+and each column an input dimension.\footnote{
+The nomenclature vector-Jacobian-product used widely in backpropagation
+comes from left-to-right processing of the chain rule $\frac{d\ell}{df}\frac{df}{dg}\cdots$.
+Since the output term $\ell\in\R$ must be a scalar,
+the chain rule results in a chain of vector-matrix multiplications.
+}
 These derivatives can then be used to update the parameters of each layer,
 completing one iteration of the learning process.
 Thus, we can write modular implementations of layers by providing either Jacobian matrices
