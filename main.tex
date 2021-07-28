@@ -590,7 +590,7 @@ Variational inference performs approximate inference by introducing variational 
 $q_\phi(z \mid x)$ and maximizing the following lower bound on $\log p(x)$:
 \begin{equation}
     \log p(x) - \KL{q(z \mid x) || p(z \mid x)}
-    = \Es{q_\phi(z \mid x)}{\log \frac{p_\theta(x,z)}{q_\phi(z\mid x)}} = \mcL(\theta, \phi).
+    = \Es{q_\phi(z \mid x)}{\log \frac{p_\theta(x,z)}{q_\phi(z\mid x)}} = L(\theta, \phi).
 \end{equation}
 
 (Write out objective in full.)
