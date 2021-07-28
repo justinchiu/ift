@@ -5,6 +5,8 @@
 \documentclass[11pt]{article}
 
 \usepackage[a4paper, total={6in, 8in}]{geometry}
+\usepackage{lineno}
+\linenumbers
 
 \usepackage{caption,subcaption}
 
@@ -84,7 +86,7 @@ This can result in a large slowdown,
 and also requires careful choosing of which computationals subgraphs to checkpoint.
 A second method is an improvement upon checkpointing, called reversible computation \citep{maclaurin2015reversible,gomez2017reversible},
 which improves space complexity at the cost of expressivity, but not speed.
-Reversible computation ensures that the gradient with respect to input depends only on the output,
+Reversible computation ensures that the gradient with respect to (wrt) input depends only on the output,
 allowing the input to be discarded during function evaluation.
 This is typically accomplished by ensuring that the input is easily reconstructed from the output,
 restricting the expressivity of layers.
@@ -249,8 +251,17 @@ As mentioned in Sec.~\ref{sec:intro}, the IFT is useful for saving memory when p
 automatic differentiation.
 The main benefit of the IFT is that once we have a solution to the system of equations,
 we can forget about how we obtained that solution but still compute derivatives.
+
+As an example, say we obtained a solution using gradient descent,
+which from an initial point $\theta = x_0$
+produces $x_1, x_2, ..., x_1000$ if you run it for 1000 iterations.
+Without the IFT, you would have to store all 1000 $x$'s
+and the computation used to produce them.
+The IFT lets you throw away $x_1$ through $x_999$, and gives you the derivative
+$\frac{dx_1000}{dx_0}$.
+
 In particular, we will show how to compute derivatives of the solution of an optimization problem
-with respect to (wrt) parameters of the problem without storing intermediate computations.
+wrt parameters of the problem without storing intermediate computations.
 We will use the optimality criteria of the optimization problem to define a system of equations,
 then apply the IFT to compute the Jacobian of the solution wrt the parameters.
 This methodology allows us to use the solution to an optimization problem
