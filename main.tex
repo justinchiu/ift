@@ -408,9 +408,6 @@ We will refer to this as the softmax problem.
 Our goal is to compute the Jacobian of softmax
 $\frac{dx}{d\theta} = \frac{d\softmax(\theta)}{d\theta}$
 using the IFT and the optimization problem above.
-This would allow us to compute gradients via autodiff inside a
-neural network via the chain rule,
-although we will stop at computing the Jacobian.
 While this is not of practical use (there is a closed-form equation
 for both softmax and its Jacobian),
 we use it as an introduction to the mechanism
