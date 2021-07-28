@@ -604,9 +604,8 @@ Sudoku from only inputs and outputs \citep{optnet}.
 
 \subsection{Quadratic Programs}
 OptNet applies the IFT to quadratic programs (QPs) in particular.
-As one of the first attempts to apply the IFT to differentiable optimization layers in
-neural networks, OptNet targeted QPs due to their status
-as the simplest nonlinear optimization problem {\color{red}(speculation)}.
+As the simplest nonlinear optimization problem,
+QPs strike a balance between expressivity and computational tractability \citep{simplex}.
 The methodology remains the same as the softmax problem:
 Given a QP and a solution,
 use the KKT conditions to produce a system of equations then apply the IFT
