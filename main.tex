@@ -495,7 +495,11 @@ rather than the full derivative $\frac{d(x,u,v)}{d\theta}$,
 in addition to the sparsity of $\frac{dF}{d\theta}$, 
 we only have to solve for the upper-left $n\times n$ block of $A^{-1}\in\R^{n+1\times n+1}$.
 To do so, we will repeat the same block-wise inverse computation.
-Let us denote $A = \begin{bmatrix}E & F \\ G & H\end{bmatrix}$.
+Let us denote
+$$A
+= \begin{bmatrix} \diag(x)^{-1} & -\mathbf{1}_n \\ u\mathbf{1}_n^\top & 0 \end{bmatrix}
+= \begin{bmatrix}E & F \\ G & H\end{bmatrix}.
+$$
 First, we compute the Schur complement of $A$,
 \begin{equation}
 A/E = H - GE^{-1}F = 0 + u\mathbf{1}_n^\top\diag(x)\mathbf{1}_n = ux^\top\mathbf{1}_n.
