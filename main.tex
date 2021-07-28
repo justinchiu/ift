@@ -514,8 +514,9 @@ OptNet generalizes the methodology applied above to the softmax problem by
 including parameterized constraints and computing the gradients of the solution
 wrt all parameters.
 This allows us to learn not only the objective, but also the constraints.
-Constraint learning allows models with optimization layers to outperform
-unstructured models on tasks with hard constraints, such as Sudoku \citep{optnet}.
+Constraint learning allows models with optimization layers to perform well
+on tasks with hard constraints, such as learning to play
+Sudoku from only inputs and outputs \citep{optnet}.
 
 \subsection{Quadratic Programs}
 OptNet applies the IFT to quadratic programs (QPs) in particular.
