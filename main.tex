@@ -226,6 +226,8 @@ existence of the implicit solution mapping $x^*(\theta)$,
 and tells us how to compute $\frac{dx^*(\theta)}{d\theta}$.
 This is useful if the iterative procedure (squiggly line), is too expensive
 to store in memory for use in automatic differentiation.
+(split figures in progress below in next page, since the two illustrations are
+unrelated)
 }
 \end{figure}
 
@@ -361,16 +363,20 @@ for computing derivatives of composite functions.
 Key to this process is the Jacobian matrix of each layer, the matrix of partial derivatives
 of the layer's outputs wrt its inputs.
 
-As an example, let's say we would like to maximize $b = f_3(f_2(f_1(a)))$ with a gradient-based method,
-where $b\in\R$; $f_3:\R^n\to\R$; $f_1,f_2:\R^n\to\R^n$; and $a\in\R^n$.
-We can compute the derivatives of $b$ wrt each layer via the chain rule.
+As an example, let's say we would like to maximize $y = f_3(f_2(f_1(\theta)))$ with a gradient-based method,
+where $y\in\R$; $f_3:\R^n\to\R$; $f_1,f_2:\R^n\to\R^n$; and $\theta\in\R^n$.
+We can compute the derivatives of $y$ wrt each layer via the chain rule.
 Focusing on the first layer $f_1$,
 we have $\frac{db}{df_1} = \frac{db}{df_3}\frac{df_3}{df_2}\frac{df_2}{df_1}$,
 where each term is the Jacobian matrix for the respective layer in the denominator.
 These derivatives can then be used to update the parameters of each layer,
 completing one iteration of the learning process.
-
-Given its key role in learning, we will proceed towards computing the Jacobian of softmax
+Thus, we can write modular implementations of layers by providing either Jacobian matrices
+or by implementing vector-Jacobian products for each layer, with the latter usually
+being more efficient.
+For simplicity, we focus on just computing the Jacobian, with softmax as our
+layer of focus.
+Given this learning setup, we can now proceed towards computing the Jacobian of softmax
 using the IFT by first reviewing softmax.
 
 \subsection{Softmax}
