@@ -101,6 +101,7 @@ to a series of equations.
 In this report, we will cover the use of the implicit function theorem
 in OptNet \citep{optnet}, which allows us to use the output of an
 optimization problem inside a neural network.
+{\color{red} Explain OptNet}
 %and apply it to reducing the computational cost of taking derivatives through variational inference.
 
 \paragraph{Bilevel Optimization}
@@ -113,7 +114,7 @@ we must additionally solve an inner optimization problem.
 
 The application we focus on in this report is expressing individual layers of a neural network declaratively
 as the solution of an optimization problem \citep{optnet,agrawal2019diffcvx,gould2019declarative}.
-This allows model to learn, without heavy manual specification, the constraints of the problem
+This allows models to learn, without heavy manual specification, the constraints of the problem
 in addition to the parameters of the objective.
 We will discuss this in further detail later on in the report,
 when we go over OptNet \citep{optnet}.
@@ -134,6 +135,8 @@ to maximize a lower bound objective \citep{kim2018savi}.
 This is also accomplished by differentiating through the iterative optimization procedure
 applied to the variational parameters during inference.
 (Other VI papers \citep{vi,johnson2017pgm})
+
+{\color{red} finish loop, how does IFT help with these applications}
 
 \section{The Implicit Function Theorem}
 The implicit function theorem (IFT) has a long history, as well as many applications
@@ -249,7 +252,7 @@ We provide an illustration in Fig.~\ref{fig:circle}.
 \subsection{Why is the IFT useful?}
 As mentioned in Sec.~\ref{sec:intro}, the IFT is useful for saving memory when performing
 automatic differentiation.
-The main benefit of the IFT is that once we have a solution to the system of equations,
+The main benefit of the IFT is that once we have a solution to a system of equations,
 we can forget about how we obtained that solution but still compute derivatives.
 
 As an example, say we obtained a solution using gradient descent,
