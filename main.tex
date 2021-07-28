@@ -66,8 +66,6 @@ of computing gradients manually.
 AD operates by reducing functions into compositions of atomic operations,
 for which we have a library of derivatives for,
 and composing those derivatives via the chain rule.
-(introduce the representation of functions as evaluation procedures / computational graphs,
-following \citet{griewank2008autodiff})
 While efficient relative to the evaluation of the function in question,
 taking only a multiplicative constant longer than the evaluation itself,
 this may be prohibitively expensive if the original function evaluation itself is costly.
