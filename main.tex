@@ -363,11 +363,11 @@ for computing derivatives of composite functions.
 Key to this process is the Jacobian matrix of each layer, the matrix of partial derivatives
 of the layer's outputs wrt its inputs.
 
-As an example, let's say we would like to maximize $y = f_3(f_2(f_1(\theta)))$ with a gradient-based method,
-where $y\in\R$; $f_3:\R^n\to\R$; $f_1,f_2:\R^n\to\R^n$; and $\theta\in\R^n$.
-We can compute the derivatives of $y$ wrt each layer via the chain rule.
+As an example, let's say we would like to maximize $\ell = f_3(f_2(f_1(\theta)))$ with a gradient-based method,
+where $\ell\in\R$; $f_3:\R^n\to\R$; $f_1,f_2:\R^n\to\R^n$; and $\theta\in\R^n$.
+We can compute the derivatives of $\ell$ wrt each layer via the chain rule.
 Focusing on the first layer $f_1$,
-we have $\frac{db}{df_1} = \frac{db}{df_3}\frac{df_3}{df_2}\frac{df_2}{df_1}$,
+we have $\frac{d\ell}{df_1} = \frac{db}{df_3}\frac{df_3}{df_2}\frac{df_2}{df_1}$,
 where each term is the Jacobian matrix for the respective layer in the denominator.
 These derivatives can then be used to update the parameters of each layer,
 completing one iteration of the learning process.
