@@ -154,27 +154,6 @@ For an overview of the history of the IFT and some of its classical applications
 in mathematics and economics,
 see the book by \citet{iftbook}.
 
-\subsection{What is the IFT?}
-Consider the unit circle,
-governed by the relation $F(a,b) = a^2 + b^2 - 1 = 0$,
-which can be interpreted as a system of equations.
-As $F$ fails the vertical line test, we cannot write $b$ as a function of $a$ globally.
-This prevents us from taking derivatives, for example $\frac{db}{da}$.
-However, we can use local parameterizations: $f_1(a) = \sqrt{1-b^2}$ if $b > 0$
-or $f_2(a) = -\sqrt{1-b^2}$ if $b<0$.
-These local parameterizations then allow us to take derivatives $\frac{db}{da}$
-at particular points $(a,b)$ using the corresponding parameterization.
-See Fig.~\ref{fig:circle} for an illustration.
-The IFT generalizes this example, and formalizes the conditions under which there exist
-smooth local parameterizations for a given relation or system of equations.
-
-While the unit circle in this example has very simple local parameterizations,
-in general local parameterizations can be very complicated: for example
-an unrolled program can be considered a local parameterization.
-Additionally, the IFT does not give the form of the local parameterizations,
-it only guarantees the existence of one around a point and a way to compute its derivative.
-The local parameterization is left implicit, hence the `implicit' in IFT.
-
 \begin{figure}
 %\begin{minipage}{0.48\textwidth}
 \centering
@@ -204,12 +183,68 @@ The local parameterization is left implicit, hence the `implicit' in IFT.
 A circle, defined by the relation $a^2 + b^2 - 1 = 0$.
 While we cannot differentiate the relation directly,
 we can compute derivatives at the point $a_1$ using the local parameterization $f_1(a)=\sqrt{1-b^2}$ that holds
-in a neighbourhood around $a_1$.
+in a neighbourhood around $a_1$, visualized as an arc.
 We cannot use the same parameterization at $a_2$ as the derivative is undefined.
 In general, the IFT is most useful in cases more complicated than the unit circle,
 where local parameterizations are too complex to write down.
 }
 \end{figure}
+
+
+\subsection{What is the IFT?}
+Consider the unit circle,
+governed by the relation $F(a,b) = a^2 + b^2 - 1 = 0$,
+which can be interpreted as a system of equations.
+As $F$ fails the vertical line test, we cannot write $b$ as a function of $a$ globally.
+This prevents us from taking derivatives, for example $\frac{db}{da}$.
+However, we can use local parameterizations: $f_1(a) = \sqrt{1-b^2}$ if $b > 0$
+or $f_2(a) = -\sqrt{1-b^2}$ if $b<0$.
+Note that the local parameterizations hold only within a neighbourhood of a particular
+solution $(a,b)$.
+These local parameterizations then allow us to take derivatives $\frac{db}{da}$
+at particular points $(a,b)$ using the corresponding parameterization.
+See Fig.~\ref{fig:circle} for an illustration.
+The IFT generalizes this example, and formalizes the conditions under which there exist
+smooth local parameterizations for a given relation or system of equations.
+
+While the unit circle in this example has very simple local parameterizations,
+in general local parameterizations can be more complicated: For example
+a series of iterative updates is a local parameterization.
+Additionally, the IFT does not give the form of the local parameterizations;
+it only guarantees the existence of one around a point and a way to compute its derivative.
+The local parameterization is left implicit, hence the `implicit' in IFT.
+
+Formally, given a system of equations $F(\theta, x) = \mathbf{0}_m$,\footnote{
+We will denote vectors and matrices of all 1s and 0s by $\mathbf{1}_S$
+and $\mathbf{0}_S$, where $S$ denotes the shape, i.e. $\mathbf{0}_m\in\R^m$.
+}
+and a solution point $(\theta,x) \in \R^n\times\R^m$,
+the IFT gives sufficient conditions under which $x$ can locally be written as a function
+of just the parameters $\theta$ within a neighbourhood of the solution point $(\theta,x)$.\footnote{
+Going back to the unit circle example, the local parameterizations were only valid around
+a particular $(a,b)$ point.
+}
+We refer to this function $x^*(\theta) = x$ as a solution mapping,
+and informally refer to $x$ as a solution, as $\theta$ are parameters.
+These conditions are as follows:
+\begin{enumerate}
+\item We have a solution point $(\theta, x)$ that satisfies the system of equations
+    $F(\theta, x) = 0$.
+\item $F$ has at least continuous first derivatives: $F \in \mcC^1$.
+\item The Jacobian matrix of $F$ wrt $x$ evaluated at the solution point $(\theta,x)$ is nonsingular:
+    $\det \frac{d F(\theta,x)}{d x} \neq 0$.
+\end{enumerate}
+Given these conditions hold for $F,\theta,$ and $x$, the IFT
+asserts the existence of the implicit solution mapping $x^*(\theta):\R^n\to\R^m$,
+and that the derivative of the solution mapping is given by
+$\frac{d x^*(\theta)}{d\theta} = -[\frac{dF(\theta,x)}{dx}]^{-1}
+    \frac{d F(\theta,x)}{d\theta}$.
+
+\subsection{Why is the IFT useful?}
+As mentioned in Sec.~\ref{sec:intro}, the IFT is useful for saving memory when performing
+automatic differentiation.
+The main benefit of the IFT is that once we have a solution to a system of equations,
+we can forget about how we obtained that solution but still compute derivatives.
 
 \begin{figure}
 \centering
@@ -246,42 +281,9 @@ to store in memory for use in automatic differentiation.
 %\end{minipage}
 \end{figure}
 
-Formally, the IFT gives sufficient conditions under which the solution $x\in\R^m$
-to a system of equations, $F(\theta, x) = 0$ with $F: \R^n\times\R^m\to\R^m$,
-can locally be written as a function of just the parameters $\theta\in\R^n$,
-i.e. there exists a solution mapping $x^*:\R^n\to\R^m$
-in the neighbourhood of the particular point $(\theta,x)\in\dom(F)$.
-These conditions are as follows:
-\begin{enumerate}
-\item We have a solution point $(\theta, x)$ that satisfies the system of equations
-    $F(\theta, x) = 0$.
-\item $F$ has at least continuous first derivatives: $F \in \mcC^k$.
-\item The Jacobian of $F$ wrt $x$ evaluated at the solution point $(\theta,x)$ is nonsingular:
-    $\det \frac{d F}{d x} \neq 0$.
-\end{enumerate}
-Given these conditions hold for $F,\theta,$ and $x$, we are then
-able to assert the existence of the implicit solution mapping $x^*(\theta)$,
-and determine its derivative
-$\frac{d x^*(\theta)}{d\theta} = -[\frac{dF(\theta,x)}{dx}]^{-1}
-    \frac{d F(\theta,x)}{d\theta}$.
-
-\subsection{Why is the IFT useful?}
-As mentioned in Sec.~\ref{sec:intro}, the IFT is useful for saving memory when performing
-automatic differentiation.
-The main benefit of the IFT is that once we have a solution to a system of equations,
-we can forget about how we obtained that solution but still compute derivatives.
-
-As an example, say we obtained a solution using gradient descent,
-which from an initial point $\theta = x_0$
-produces $x_1, x_2, ..., x_{K}$ if you run it for $K$ iterations.
-Without the IFT, you would have to store all $x_k$'s
-and the computation used to produce them.
-The IFT lets you throw away $x_1$ through $x_{K-1}$, and gives you the derivative
-$\frac{dx_{K}}{dx_0}$.
-We provide an illustration in Fig.~\ref{fig:optift}.
-
 In particular, we will show how to compute derivatives of the solution of an optimization problem
 wrt parameters of the problem without storing intermediate computations.
+illustrated in Fig.~\ref{fig:optift}.
 We will use the optimality criteria of the optimization problem to define a system of equations,
 then apply the IFT to compute the Jacobian of the solution wrt the parameters.
 This methodology allows us to use the solution to an optimization problem
