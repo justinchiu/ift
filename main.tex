@@ -605,7 +605,8 @@ softmax problem.
 \subsection{Limitations}
 \label{sec:limitations}
 In order to compute the derivative $\frac{dx}{d\theta}$, we had to invert the Jacobian of $F$.
-However, The first part of $F$ (recall from Eqn.~\ref{eqn:system}), the stationarity condition $\nabla_x\mcL = 0$,
+However, The first part of $F$ (recall from Eqn.~\ref{eqn:system}), the stationarity condition
+$\frac{d}{dx}\mcL = 0$,
 already involved the Jacobian of the Lagrangian $\mcL$.
 In general, this means that in order to apply the IFT to solutions of optimization problems,
 we must compute the inverse Hessian of the Lagrangian (or at least a Hessian-vector-product).
