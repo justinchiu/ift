@@ -327,7 +327,7 @@ where we have the matrix of partial derivatives
     \frac{dF_m}{d\theta_1} & \cdots & \frac{dF_m}{d\theta_n} \\
 \end{bmatrix},
 \end{equation*}
-and similarly for $\frac{dF}{dx}$.
+and similarly for $\frac{dF}{dx}\in\R^{m\times m}$.
 
 In order to embed an optimization layer inside a neural network,
 we must provide the Jacobian for our layer for use in an AD system.\footnote{
