@@ -372,7 +372,8 @@ of equations must also include dual variables.
 }
 We will refer to this as the softmax problem.\footnote{
 Removing the entropy regularization term results in an optimization problem
-whose solution is argmax.
+whose solution is argmax: maximize $z^\top\theta$, subject to $z^\top\mathbf{1}_n=1$
+and $z \succeq 0$.
 }
 
 Our goal is to compute the Jacobian of softmax
