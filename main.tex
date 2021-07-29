@@ -461,12 +461,8 @@ While we could use the convention $0\log 0 = 0$,
 this does not fix the divide-by-zero issue with the second derivative, which we see here.
 }
 To avoid this, we consider only strictly positive $z \succ 0$ for the IFT.\footnote{
-We saw something similar with the unit circle example, where the derivative was undefined
-for $a=0$ using a particular parameterization (see Fig.~\ref{fig:circle}).
-While the issue in the unit circle case could be solved by using another parameterization
-due to symmetry,
-there is less symmetry in the softmax problem. {\color{red} check this with an expert,
-there may be something in the sparsemax analysis that helps here}
+We saw something similar with the unit circle example, where the derivative
+$\frac{db}{da}$ was undefined when $a=0$ (see Fig.~\ref{fig:circle}).
 }
 Given the strict positivity of $z$,
 we can deduce that the Jacobian of $F$ is full rank and therefore has nonzero determinant.
