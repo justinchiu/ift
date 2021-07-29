@@ -70,8 +70,9 @@ While efficient relative to the evaluation of the function in question,
 taking only a multiplicative constant longer than the evaluation itself,
 this may be prohibitively expensive if the original function evaluation itself is costly.
 An example of this is if the function takes the form of an unrolled loop,
-a common artifact of iterative methods.
-As naive AD requires storing all of the intermediate values at each point,
+a common artifact of applying AD to an iterative method.
+As naive AD requires flattening programs and
+storing all of the intermediate values at each iteration,
 storing the output of all computations at every iteration of a loop can quickly
 become infeasible due to memory limitations.
 
@@ -94,7 +95,15 @@ Implicit differentiation relies on the implicit function theorem (IFT),
 which gives conditions under which derivatives can be computed independent of
 intermediate computation.
 The primary condition is the characterization of the output as the solution
-to a series of equations.
+to a system of equations.
+
+As an example, say we obtain a solution to a system of equations using gradient descent.
+Given the initial point $\theta = x_0$,
+iterates $x_1, x_2, ..., x_{K}$ are produced by running a solver for $K$ iterations.
+If we wanted to compute $\frac{dx_K}{d\theta}$, we would have to store all $x_k$'s
+and the computation used to produce them.
+The IFT lets you throw away $x_1$ through $x_{K-1}$, and gives you the derivative
+$\frac{dx_{K}}{dx_0}$.
 
 In this report, we will cover the use of the implicit function theorem
 in computing derivatives of solutions of optimization problems wrt inputs
@@ -112,30 +121,31 @@ The application we focus on in this report is expressing individual layers of a 
 as the solution of an optimization problem \citep{optnet,agrawal2019diffcvx,gould2019declarative}.
 This allows models to learn, without heavy manual specification, the constraints of the problem
 in addition to the parameters of the objective.
-We will discuss this in further detail later on in the report,
-when we go over OptNet \citep{optnet}.
+An example of this is learning to play Sudoku from only input-output pairs.
+While the unstructured models struggle to satisfy the hard constraints of Sudoku,
+OptNet is able to succeed to a reasonable degree \citep{optnet}.
 
 Other applications that can be formulated as bilevel optimization problems are
 hyperparameter optimization, metalearning, and variational inference.
-Hyperparameter optimization formulates hyperparameter tuning, such as the shrinkage penalty in Lasso,
-as a bilevel optimization problem by computing gradients wrt the penalty through the entire learning procedure
-of the linear model \citep{lorraine2019implasso}.
-(Other works on hyperparam opt \citep{maclaurin2015reversible,bertrand2020implicit})
+Hyperparameter optimization formulates hyperparameter tuning as a bilevel optimization problem,
+as for each hyperparameter configuration a new model must be trained as the inner loop
+\citep{maclaurin2015reversible,lorraine2019implasso,lorraine2019hoift,bertrand2020implicit}.
+Gradients must then be propagated through the inner training loop to the outer hyperparameter
+loop.
 Similarly, metalearning learns the parameters of a model such that the model is able to quickly
 be adapted to a new task via gradient descent \citep{finn2017maml,rajeswaran2019imaml}.
 This is accomplished by differentiating through the learning procedure of each new task.
 Finally, a variant of variational inference follows a very similar format:
 semi-amortized variational inference (SAVI) aims to learn a model that is able to provide
-a good initialization for variational parameters that are subsequently updated
+a good initialization for variational parameters that are subsequently updated iteratively
 to maximize a lower bound objective \citep{kim2018savi}.
 This is also accomplished by differentiating through the iterative optimization procedure
 applied to the variational parameters during inference.
-(Other VI papers \citep{vi,johnson2017pgm})
 
 In all the above applications, the inner-loop optimization problem is solved
 with an iterative method, except in rare, simple cases.
 The IFT reduces the memory footprint of automatic differentiation,
-which would otherwise be impossible to apply.
+which would otherwise be difficult to scale.
 
 \section{The Implicit Function Theorem}
 The implicit function theorem (IFT) has a long history, as well as many applications
