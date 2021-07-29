@@ -646,9 +646,10 @@ or other convex optimization problems \citep{agrawal2019diffcvx}.
 OptNet generalizes the methodology applied above to the softmax problem by
 extending the optimization problems considered,
 in particular including parameterized constraints.
-This allows us to learn not only the objective, but also the constraints,
-which allows models with optimization layers to perform well
-on tasks with hard constraints, such as learning to play
+This allows us to learn not only the objective, but also the constraints.
+Explicitly incorporating families of constraints in models
+with optimization layers to allows them to perform well
+on tasks with rigid constraints, such as learning to play
 Sudoku from only inputs and outputs \citep{optnet}.
 
 \subsection{Quadratic Programs}
