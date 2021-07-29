@@ -610,7 +610,7 @@ However, The first part of $F$ (recall from Eqn.~\ref{eqn:system}), the stationa
 already involved the Jacobian of the Lagrangian $\mcL$.
 In general, this means that in order to apply the IFT to solutions of optimization problems,
 we must compute the inverse Hessian of the Lagrangian (or at least a Hessian-vector-product).
-The Hessian is a matrix of size $O(n^2)$, and inverting this would take $O(n^3)$ computation.
+The Hessian is a matrix of size $O(m^2)$, and inverting this would take $O(m^3)$ computation.
 Thankfully, there are relatively cheap ways of approximating this computation,
 such as with approximate (inverse) Hessian-vector-product techniques
 \citep{rajeswaran2019imaml,lorraine2019hoift}.
