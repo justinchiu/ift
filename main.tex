@@ -304,50 +304,38 @@ Since the Jacobian of softmax is known, we can directly verify that the IFT give
 the correct answer.
 
 \subsection{Modular learning via the chain rule}
-Before we get into the details of softmax, we first setup the learning problem.
-We are interested in training a neural network model that consists of stacks of layers,
+Before we get into the details of softmax, we first motivate the learning problem.
+Neural networks consist of stacks of layers,
 all of which take the output of the previous layer as input.
-In order to train such a model we rely on backpropagation,  also known as reverse mode AD.
-Reverse mode AD propagates error information backward through the network via the chain rule
-for computing derivatives of composite functions.
+In order to train neural networks we rely on reverse mode AD, or backpropagation.
+Reverse mode AD propagates error information backward through the network via the chain rule.
 Key to this process is the Jacobian matrix of each layer, the matrix of partial derivatives
 of the layer's outputs wrt its inputs.
 
-{\color{red} still rough, ideally incorporate softmax}
-{\color{red} refer readers to better tutorials, like \citet{griewank2008autodiff}}
-As an example, we would like to maximize $\ell = f_2(f_1(a))$ with a gradient-based method,
-where $\ell\in\R$, $f_2:\R^n\to\R$, $f_1:\R^n\to\R^n$, and $a\in\R^n$.
-Each $f_i$ is a layer in a neural network, with associated parameters $\theta_i$.
-We can compute the derivatives of $\ell$ wrt the parameters of each layer via the chain rule,
-i.e. we have $\frac{d\ell}{d\theta_1} = \frac{d\ell}{df_2}\frac{df_2}{df_1}\frac{df_1}{da}$,
-where each term is the Jacobian matrix for the respective layer in the denominator.
-For example, the Jacobian of the first layer $f_1$ is
-$$\frac{df_1}{da} = \begin{bmatrix}
-\frac{\partial [f_1]_1}{\partial [a]_1} & 
-    \frac{\partial [f_1]_1}{\partial [a]_2} &
-    \cdots\\
-\frac{\partial [f_1]_2}{\partial [a]_1} & 
-    \frac{\partial [a]_2}{\partial [a]_2} &
-    \cdots \\
-\vdots & \vdots & \ddots
+Given a function $F:\R^n\times\R^m\to\R^m$, we denote the Jacobian evaluated at
+the point $(\theta,x)\in\R^n\times\R^m$ as
+\begin{equation*}
+\frac{dF(\theta,x)}{d(\theta,x)} = \begin{bmatrix}
+    \frac{dF}{d\theta} &\frac{dF}{dx} 
 \end{bmatrix},
-$$
-is an $n\times n$ matrix where each row corresponds to an output dimension of $f_1$
-and each column an input dimension.\footnote{
-The nomenclature vector-Jacobian product
-comes from the left-to-right processing of the chain rule $\frac{d\ell}{df}\frac{df}{dg}\cdots$.
-Since the output term $\ell\in\R$ must be a scalar,
-the chain rule results in a chain of vector-matrix multiplications.
+\end{equation*}
+where we have the matrix of partial derivatives
+\begin{equation*}
+\frac{dF}{d\theta} = \begin{bmatrix}
+    \frac{dF_1}{d\theta_1} & \cdots & \frac{dF_1}{d\theta_n} \\
+    \vdots & \ddots & \vdots \\
+    \frac{dF_m}{d\theta_1} & \cdots & \frac{dF_m}{d\theta_n} \\
+\end{bmatrix},
+\end{equation*}
+and similarly for $\frac{dF}{dx}$.
+
+In order to embed an optimization layer inside a neural network,
+we must provide the Jacobian for our layer for use in an AD system.\footnote{
+This is a slight simplification. We often need to provide the vector-Jacobian product
+and/or Jacobian-vector product.
 }
-These derivatives can then be used to update the parameters of each layer
-using $\frac{d\ell}{df_i}\frac{df_i}{d\theta_i}$,
-completing one iteration of the learning process.
-Thus, we can write modular implementations of layers by providing either Jacobian matrices
-or by implementing vector-Jacobian products for each layer, with the latter usually
-being more efficient.
-For simplicity, we focus on just computing the Jacobian, with softmax as our
-layer of focus.
-Given this learning setup, we can now proceed to a review of softmax.
+With this in mind, we proceed to review softmax and its equivalent formulation
+as an optimization problem.
 
 \subsection{Softmax}
 Softmax is often used to parameterize categorical distributions within neural networks,
@@ -540,7 +528,7 @@ D = \diag(z).
 \end{align*}
 However, by complementary slackness, we have $v = 0$,\footnote{
 We apply the IFT to solutions where $z\succ 0$ due to a divide-by-zero issue
-in $\frac{d^2H(z)}{d[z]_i^2} = \frac{1}{[z]_i}$.
+in $\frac{d^2H(z)}{dz_i^2} = \frac{1}{z_i}$.
 }
 reducing the above to
 \begin{equation*}
