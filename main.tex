@@ -316,21 +316,21 @@ Given a function $F:\R^n\times\R^m\to\R^m$, we denote the Jacobian evaluated at
 the point $(\theta,x)\in\R^n\times\R^m$ as
 \begin{equation*}
 \frac{dF(\theta,x)}{d(\theta,x)} = \begin{bmatrix}
-    \frac{dF}{d\theta} &\frac{dF}{dx} 
+    \frac{dF(\theta,x)}{d\theta} &\frac{dF(\theta,x)}{dx} 
 \end{bmatrix},
 \end{equation*}
 where we have the matrix of partial derivatives
 \begin{equation*}
-\frac{dF}{d\theta} = \begin{bmatrix}
-    \frac{dF_1}{d\theta_1} & \cdots & \frac{dF_1}{d\theta_n} \\
+\frac{dF(\theta,x)}{d\theta} = \begin{bmatrix}
+    \frac{dF_1(\theta,x)}{d\theta_1} & \cdots & \frac{dF_1(\theta,x)}{d\theta_n} \\
     \vdots & \ddots & \vdots \\
-    \frac{dF_m}{d\theta_1} & \cdots & \frac{dF_m}{d\theta_n} \\
+    \frac{dF_m(\theta,x)}{d\theta_1} & \cdots & \frac{dF_m(\theta,x)}{d\theta_n} \\
 \end{bmatrix},
 \end{equation*}
-and similarly for $\frac{dF}{dx}\in\R^{m\times m}$.
+and similarly for $\frac{dF(\theta,x)}{dx}\in\R^{m\times m}$.
 
 In order to embed an optimization layer inside a neural network,
-we must provide the Jacobian for our layer for use in an AD system.\footnote{
+we must provide the Jacobian of our layer for use in an AD system.\footnote{
 This is a slight simplification. We often need to provide the vector-Jacobian product
 and/or Jacobian-vector product.
 }
@@ -412,7 +412,7 @@ We then have the following necessary conditions for a solution $(z,u,v)$,
 i.e. the KKT conditions:
 \begin{equation}
 \begin{aligned}
-\nabla_x \mcL(\theta, z,u,v) &= \mathbf{0}_n && \textrm{(stationarity)}\\
+\frac{d}{dx} \mcL(\theta, z,u,v) &= \mathbf{0}_n && \textrm{(stationarity)}\\
 u(z^{\top} \mathbf{1} - 1) &= 0 && \textrm{(primal feasibility, equality)}\\
 \diag(v)z &= \mathbf{0}_{n} && \textrm{(complementary slackness)}\\
 z &\succeq \mathbf{0}_n && \textrm{(primal feasibility, inequality)}\\
@@ -440,9 +440,10 @@ We assumed we were given an optimal and therefore feasible solution $x=(z,u,v)$
 which must satisfy $F(\theta, z,u,v) = 0$,\footnote{
 Recall that softmax also has a closed form expression.}
 and $F$ has continuous first derivatives, i.e. $F \in \mcC^1$.
-All that remains is to check that the Jacobian matrix $\frac{dF}{d(z,u,v)}$ is non-singular.
+All that remains is to check that the Jacobian matrix $\frac{dF(\theta,z,u,v)}{d(z,u,v)}$
+(evaluated at the solution point) is non-singular.
 
-The Jacobian $\frac{dF}{d(z,u,v)}\in\R^{2n+1\times 2n+1}$ is given by
+The Jacobian $\frac{dF(\theta,z,u,v)}{d(z,u,v)}\in\R^{2n+1\times 2n+1}$ is given by
 \begin{equation}
 \label{eqn:f-jac}
 \frac{dF}{d(z,u,v)}=
@@ -471,18 +472,18 @@ This shows that the conditions of the IFT hold.
 \subsection{The Jacobian of Softmax}
 Now that we have shown that the conditions of the IFT hold,
 we can proceed to apply the second part of the IFT in order to compute $\frac{dz}{d\theta}$.
-Recall that we have the solution $x = (z,u,v)$; we will use $x$ for brevity.
+Recall that we have the solution $x = (z,u,v)$; we will switch to $x$ for brevity.
 The second part of the IFT tells us that we can compute the Jacobian of the
 solution mapping $\frac{dx}{d\theta} = \frac{dx^*(\theta)}{d\theta}
 = \left[\frac{dF}{dx}\right]^{-1}\frac{dF}{d\theta}$,
 then pick out the relevant components.
 
-The second term, $\frac{dF}{d\theta}$, is simple.
+The second term, $\frac{dF(\theta,x)}{d\theta}$, is simple.
 Since $\theta$ only appears in the first vector-valued function of $F$
 (see Eqn.~\ref{eqn:system}), we have
 \begin{equation}
 \label{eqn:df-dtheta}
-\frac{dF}{d\theta} = \begin{bmatrix}
+\frac{dF(\theta,x)}{d\theta} = \begin{bmatrix}
     I_{n\times n}\\
     \mathbf{0}_{(n+1)\times (n+1)}
 \end{bmatrix}.
@@ -494,7 +495,7 @@ which is no longer available in more general optimization problems.}
 Next, we have to invert the Jacobian from Eqn.~\ref{eqn:f-jac}:
 \begin{equation}
 \label{eqn:dsystem-matrix}
-\left[\frac{dF}{dx}\right]^{-1} = \begin{bmatrix}
+\left[\frac{dF(\theta,x)}{dx}\right]^{-1} = \begin{bmatrix}
 \diag(z)^{-1} & -\mathbf{1}_n & -I_{n\times n} \\
 u\mathbf{1}_n^\top & x^\top\mathbf{1}_n - 1 & 0\\
 \diag(v) & 0 & \diag(z)
