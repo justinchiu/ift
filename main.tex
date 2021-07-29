@@ -313,19 +313,21 @@ for computing derivatives of composite functions.
 Key to this process is the Jacobian matrix of each layer, the matrix of partial derivatives
 of the layer's outputs wrt its inputs.
 
-As an example, let's say we would like to maximize $\ell = f_2(f_1(\theta))$ with a gradient-based method,
-where $\ell\in\R$, $f_2:\R^n\to\R$, $f_1:\R^n\to\R^n$, and $\theta\in\R^n$.
-We can compute the derivatives of $\ell$ wrt each layer via the chain rule.
-Focusing on $\theta$,
-we have $\frac{d\ell}{d\theta} = \frac{d\ell}{df_2}\frac{df_2}{df_1}\frac{df_1}{d\theta}$,
+{\color{red} still rough, ideally incorporate softmax}
+{\color{red} refer readers to better tutorials, like \citet{griewank2008autodiff}}
+As an example, we would like to maximize $\ell = f_2(f_1(a))$ with a gradient-based method,
+where $\ell\in\R$, $f_2:\R^n\to\R$, $f_1:\R^n\to\R^n$, and $a\in\R^n$.
+Each $f_i$ is a layer in a neural network, with associated parameters $\theta_i$.
+We can compute the derivatives of $\ell$ wrt the parameters of each layer via the chain rule,
+i.e. we have $\frac{d\ell}{d\theta_1} = \frac{d\ell}{df_2}\frac{df_2}{df_1}\frac{df_1}{da}$,
 where each term is the Jacobian matrix for the respective layer in the denominator.
 For example, the Jacobian of the first layer $f_1$ is
-$$\frac{df_1}{d\theta} = \begin{bmatrix}
-\frac{\partial [f_1]_1}{\partial [\theta]_1} & 
-    \frac{\partial [f_1]_1}{\partial [\theta]_2} &
+$$\frac{df_1}{da} = \begin{bmatrix}
+\frac{\partial [f_1]_1}{\partial [a]_1} & 
+    \frac{\partial [f_1]_1}{\partial [a]_2} &
     \cdots\\
-\frac{\partial [f_1]_2}{\partial [\theta]_1} & 
-    \frac{\partial [\theta]_2}{\partial [\theta]_2} &
+\frac{\partial [f_1]_2}{\partial [a]_1} & 
+    \frac{\partial [a]_2}{\partial [a]_2} &
     \cdots \\
 \vdots & \vdots & \ddots
 \end{bmatrix},
@@ -337,7 +339,8 @@ comes from the left-to-right processing of the chain rule $\frac{d\ell}{df}\frac
 Since the output term $\ell\in\R$ must be a scalar,
 the chain rule results in a chain of vector-matrix multiplications.
 }
-These derivatives can then be used to update the parameters of each layer,
+These derivatives can then be used to update the parameters of each layer
+using $\frac{d\ell}{df_i}\frac{df_i}{d\theta_i}$,
 completing one iteration of the learning process.
 Thus, we can write modular implementations of layers by providing either Jacobian matrices
 or by implementing vector-Jacobian products for each layer, with the latter usually
@@ -355,31 +358,36 @@ as a differentiable surrogate for argmax.
 Softmax assumes that we have $n$ items with independent utilities, $\theta \in \R^n$,
 which indicate preferences.
 Softmax then gives the following distribution over items:
-$x_i = \frac{\exp(\theta_i)}{\sum_j \exp(\theta_j)}$, with $x\in\R^n$.
-Interestingly, softmax arises as the solution of an optimization problem
-\citep{gao2018properties}.
-
-The output of softmax is the solution of the following optimization problem:
-\begin{equation}
-\label{eqn:softmax-opt}
-\begin{aligned}
-\textrm{maximize } \quad & x^\top\theta + H(x)\\
-\textrm{subject to } \quad & x^\top \mathbf{1} = 1\\
-& x \succeq 0,
-\end{aligned}
-\end{equation}
-where $H(x) = -\sum_i x_i \log x_i$ is the entropy.
-This corresponds to an entropy-regularized argmax optimization problem.
-We will refer to this as the softmax problem.
-
-Our goal is to compute the Jacobian of softmax
-$\frac{dx}{d\theta} = \frac{d\softmax(\theta)}{d\theta}$
-using the IFT and the optimization problem above.
-While this is not of practical use (there is a closed-form equation
-for both softmax and its Jacobian),
+$z_i = \frac{\exp(\theta_i)}{\sum_j \exp(\theta_j)}$, with $z\in\R^n$.
+While there is a closed-form equation
+for both softmax and its Jacobian,
 we use it as an introduction to the mechanism
 behind OptNet (and other differentiable optimization layers)
 \citep{optnet,agrawal2019diffcvx}.
+
+The output of softmax is the solution of the following optimization problem \citep{gao2018properties}:
+\begin{equation}
+\label{eqn:softmax-opt}
+\begin{aligned}
+\textrm{maximize } \quad & z^\top\theta + H(z)\\
+\textrm{subject to } \quad & z^\top \mathbf{1} = 1\\
+& z_i \geq 0, \forall i,
+\end{aligned}
+\end{equation}
+where $H(z) = -\sum_i z_i \log z_i$ is the entropy.\footnote{
+We have taken care to use the variable $z$
+for the primal variable of the softmax problem.
+This is because, as we will soon see, the solution point of the resulting system
+of equations must also include dual variables.
+}
+We will refer to this as the softmax problem.\footnote{
+Removing the entropy regularization term results in an optimization problem
+whose solution is argmax.
+}
+
+Our goal is to compute the Jacobian of softmax
+$\frac{dz}{d\theta} = \frac{d\softmax(\theta)}{d\theta}$
+using the IFT and the optimization problem above, as an exercise.
 Applying the IFT to optimization problems consists of four steps:
 \begin{enumerate}
 \item Find a solution to the optimization problem.
@@ -389,77 +397,97 @@ Applying the IFT to optimization problems consists of four steps:
 \end{enumerate}
 
 We assume the first step has been done for us,
-and we have some solution $x$ to the softmax problem.
-We will then use the IFT to compute gradients of $x$ wrt the parameters $\theta$
+and we have some solution $z$ to the softmax problem.
+We will then use the IFT to compute gradients of $z$ wrt the parameters $\theta$
 by following the rest of the steps.
 
 \subsection{The KKT conditions determine $F$}
-Given an optimization problem, the KKT conditions determine a system of equations
-that the solution must satisfy, i.e the optimality criteria \citep{kkt-thesis,kkt}.
+Given an optimization problem, the Karush-Kuhn-Tucker (KKT) conditions
+determine a system of equations that the solution must satisfy,
+i.e the optimality criteria \citep{kkt-thesis,kkt}.
 They are, roughly, stationarity (the gradient should be 0 at a local optima)
 and feasibility (the constraints of the problem should not be violated).
+For a thorough introduction to the KKT conditions, see chapter 5 of \citet{bv-cvxbook}.\footnote{
+If this is your first time seeing the KKT conditions, please check out chapter 5 of \citet{bv-cvxbook}
+and make your way back here to flex your new knowledge.
+}
+
 We will use the KKT conditions of the softmax problem in
 Eqn.~\ref{eqn:softmax-opt} to determine the function $F$ in the IFT.
-
 First, we introduce dual variables $u\in\R,v\in\R^n$ and write out the Lagrangian:
-$$\mcL(\theta, x, u, v) = x^\top\theta + H(x) + u(x^\top \mathbf{1} - 1) + v^\top x.$$
-We include $u,v$ as solution variables.\footnote{
-When the system of equations $F$ is determined by the KKT conditions,
-we must compute the Jacobian of $F$ wrt both the primal and dual variables,
-i.e. all of $x,u,v$.
-}
-We then have the following necessary conditions for a solution $(x,u,v)$,
+$$\mcL(\theta, z, u, v) = z^\top\theta + H(z) + u(z^\top \mathbf{1} - 1) + v^\top z.$$
+We therefore have the solution point $(\theta,z,u,v)$, with parameters $\theta$
+and solution $x=(z,u,v)$.
+We then have the following necessary conditions for a solution $(z,u,v)$,
 i.e. the KKT conditions:
 \begin{equation}
 \begin{aligned}
-\nabla_x \mcL(\theta, x,u,v) = 0 && \textrm{(stationarity)}\\
-u(x^{\top} \mathbf{1} - 1) = 0 && \textrm{(primal feasibility)}\\
-\diag(v)x = 0 && \textrm{(complementary slackness)}\\
-v \succeq 0 && \textrm{(dual feasibility)}
+\nabla_x \mcL(\theta, z,u,v) &= \mathbf{0}_n && \textrm{(stationarity)}\\
+u(z^{\top} \mathbf{1} - 1) &= 0 && \textrm{(primal feasibility, equality)}\\
+\diag(v)z &= \mathbf{0}_{n} && \textrm{(complementary slackness)}\\
+z &\succeq \mathbf{0}_n && \textrm{(primal feasibility, inequality)}\\
+v &\succeq \mathbf{0}_n && \textrm{(dual feasibility)}
 \end{aligned}
 \end{equation}
-As we are interested in the primal variable or solution $x$,
-we focus on the first three conditions.
+As we only need a system of equations with $2n+1$ equations to
+determine the $2n+1$ solution variables $x=(z,u,v)$,
+we use the first three conditions: stationary, primal feasibility (equality),
+and complementary slackness.
 
-In full, the system of equations $F(\theta, x,u,v) = 0$ is
+In full, the system of equations $F(\theta, z,u,v) = 0$ is
 \begin{equation}
 \label{eqn:system}
 \begin{aligned}
-\theta + -\log(x) - 1 + u\mathbf{1}_n + v &= \mathbf{0}_n\\
-u(x^{\top} \mathbf{1}_n - 1) &= 0\\
-\diag(v)x &= \mathbf{0}_n.
+\theta + -\log(z) - 1 + u\mathbf{1}_n + v &= \mathbf{0}_n\\
+u(z^{\top} \mathbf{1}_n - 1) &= 0\\
+\diag(v)z &= \mathbf{0}_n.
 \end{aligned}
 \end{equation}
 Note that the first and third equations are vector-valued.
-Both of their ranges have dimension $n$.
 
 Now we can check the conditions of the IFT.
-Any solution $(x,u,v)$ will satisfy $F(\theta, x,u,v) = 0$,
-and $F \in \mcC^1$.
-All that remains is to check that the Jacobian matrix of $F$ is non-singular.
+We assumed we were given an optimal and therefore feasible solution $x=(z,u,v)$
+which must satisfy $F(\theta, z,u,v) = 0$,\footnote{
+Recall that softmax also has a closed form expression.}
+and $F$ has continuous first derivatives, i.e. $F \in \mcC^1$.
+All that remains is to check that the Jacobian matrix $\frac{dF}{d(z,u,v)}$ is non-singular.
 
-The Jacobian $\frac{dF}{d(x,u,v)}\in\R^{n\times n+1+n}$ is given by
+The Jacobian $\frac{dF}{d(z,u,v)}\in\R^{2n+1\times 2n+1}$ is given by
 \begin{equation}
 \label{eqn:f-jac}
-\frac{dF}{d(x,u,v)}=
+\frac{dF}{d(z,u,v)}=
 \begin{bmatrix}
-\diag(x)^{-1} & -\mathbf{1}_n & -I_{n\times n} \\
-u\mathbf{1}_n^\top & x^\top\mathbf{1}_n - 1 & 0\\
-\diag(v) & 0 & \diag(x)
+\diag(z)^{-1} & -\mathbf{1}_n & -I_{n\times n} \\
+u\mathbf{1}_n^\top & z^\top\mathbf{1}_n - 1 & 0\\
+\diag(v) & 0 & \diag(z)
 \end{bmatrix}.
 \end{equation}
-Since a solution must be feasible, we know that $x^\top\mathbf{1} = 1$ and $u > 0$.
-With the additional information that the domain of the entropy term $H(x)$
-adds the implicit constraint that $\forall i, x_i > 0$,
+Since a solution must be feasible, we know that $z^\top\mathbf{1}-1=0$ and $u > 0$.
+However, the upper left block, $\diag(z)^{-1}$, contains a divide-by-zero term if
+any component $z_i = 0$.\footnote{
+This term was obtained by differentiating the entropy
+term of the Lagrangian, $H(z) = \sum_i z_i\log z_i$.
+While we could use the convention $0\log 0 = 0$,
+this does not fix the divide-by-zero issue with the second derivative, which we see here.
+}
+To avoid this, we consider only strictly positive $z \succ 0$ for the IFT.\footnote{
+We saw something similar with the unit circle example, where the derivative was undefined
+for $x=0$ using a particular parameterization.
+While the issue in the unit circle case could be solved by using another parameterization
+due to symmetry,
+there is less symmetry in the softmax problem. {\color{red} check this with an expert}
+}
+Given the strict positivity of $z$,
 we can deduce that the Jacobian of $F$ is full rank and therefore has nonzero determinant.
 This shows that the conditions of the IFT hold.
 
 \subsection{The Jacobian of Softmax}
 Now that we have shown that the conditions of the IFT hold,
-we can proceed to apply the second part of the IFT in order to compute $\frac{dx}{d\theta}$.
+we can proceed to apply the second part of the IFT in order to compute $\frac{dz}{d\theta}$.
+Recall that we have the solution $x = (z,u,v)$; we will use $x$ for brevity.
 The second part of the IFT tells us that we can compute the Jacobian of the
-solution mapping $\frac{d(x,u,v)}{d\theta} = \frac{dx^*(\theta)}{d\theta}
-= \left[\frac{dF}{d(x,u,v)}\right]^{-1}\frac{dF}{d\theta}$,
+solution mapping $\frac{dx}{d\theta} = \frac{dx^*(\theta)}{d\theta}
+= \left[\frac{dF}{dx}\right]^{-1}\frac{dF}{d\theta}$,
 then pick out the relevant components.
 
 The second term, $\frac{dF}{d\theta}$, is simple.
@@ -479,12 +507,15 @@ which is no longer available in more general optimization problems.}
 Next, we have to invert the Jacobian from Eqn.~\ref{eqn:f-jac}:
 \begin{equation}
 \label{eqn:dsystem-matrix}
-\left[\frac{dF}{d(x,u,v)}\right]^{-1} = \begin{bmatrix}
-\diag(x)^{-1} & -\mathbf{1}_n & -I_{n\times n} \\
+\left[\frac{dF}{dx}\right]^{-1} = \begin{bmatrix}
+\diag(z)^{-1} & -\mathbf{1}_n & -I_{n\times n} \\
 u\mathbf{1}_n^\top & x^\top\mathbf{1}_n - 1 & 0\\
-\diag(v) & 0 & \diag(x)
+\diag(v) & 0 & \diag(z)
 \end{bmatrix}^{-1}.
 \end{equation}
+The remainder of this section is compute-intensive;
+feel free to skip ahead to Sec.~\ref{sec:softmax-end} for the conclusion
+of the softmax exercise.
 We use the block-wise inversion formula
 \begin{equation*}
 \begin{bmatrix}
@@ -501,12 +532,16 @@ C & D
 \end{equation*}
 where
 \begin{align*}
-A = \begin{bmatrix} \diag(x)^{-1} & -\mathbf{1}_n \\ u\mathbf{1}_n^\top & 0 \end{bmatrix}&\qquad\qquad
+A = \begin{bmatrix} \diag(z)^{-1} & -\mathbf{1}_n \\ u\mathbf{1}_n^\top & 0 \end{bmatrix}&\qquad\qquad
 B = \begin{bmatrix}-I_{n\times n} \\ 0\end{bmatrix}\\
 C = \begin{bmatrix}\diag(v) & 0\end{bmatrix} &\qquad\qquad
-D = \diag(x).
+D = \diag(z).
 \end{align*}
-However, by complementary slackness, we have $v = 0$, reducing the above to
+However, by complementary slackness, we have $v = 0$,\footnote{
+We apply the IFT to solutions where $z\succ 0$ due to a divide-by-zero issue
+in $\frac{d^2H(z)}{d[z]_i^2} = \frac{1}{[z]_i}$.
+}
+reducing the above to
 \begin{equation*}
 \begin{bmatrix}
 A & B\\
@@ -520,26 +555,26 @@ C & D
     0 & I_{n \times n}
 \end{bmatrix}.
 \end{equation*}
-As we are interested in computing $\frac{dx}{d\theta}$,
-rather than the full derivative $\frac{d(x,u,v)}{d\theta}$,
+As we are interested in computing $\frac{dz}{d\theta}$,
+rather than the full derivative $\frac{dx}{d\theta}$ (recall $x = (z,u,v)$),
 in addition to the sparsity of $\frac{dF}{d\theta}$, 
 we only have to solve for the upper-left $n\times n$ block of $A^{-1}\in\R^{n+1\times n+1}$.
 To do so, we will repeat the same block-wise inverse computation.
 Let us denote
 $$A
-= \begin{bmatrix} \diag(x)^{-1} & -\mathbf{1}_n \\ u\mathbf{1}_n^\top & 0 \end{bmatrix}
+= \begin{bmatrix} \diag(z)^{-1} & -\mathbf{1}_n \\ u\mathbf{1}_n^\top & 0 \end{bmatrix}
 = \begin{bmatrix}E & F \\ G & H\end{bmatrix}.
 $$
 First, we compute the Schur complement of $A$,
 \begin{equation}
-A/E = H - GE^{-1}F = 0 + u\mathbf{1}_n^\top\diag(x)\mathbf{1}_n = ux^\top\mathbf{1}_n.
+A/E = H - GE^{-1}F = 0 + u\mathbf{1}_n^\top\diag(z)\mathbf{1}_n = uz^\top\mathbf{1}_n.
 \end{equation}
-Since $x$ is feasible, we have $A/E = u$ due to the equality constraints
-($x$ must sum to 1 as a probability mass function).
+Since $z$ is feasible, we have $A/E = u$ due to the equality constraints
+($z$ must sum to 1 as a probability mass function).
 Then, we have
 \begin{equation}
 A^{-1} = \begin{bmatrix}
-\diag(x)^{-1} & -\mathbf{1}_n\\
+\diag(z)^{-1} & -\mathbf{1}_n\\
 u\mathbf{1}^\top_n & 0
 \end{bmatrix}^{-1}
 =\begin{bmatrix}E & F \\ G & H\end{bmatrix}^{-1}
@@ -553,19 +588,19 @@ Plugging in, we have
 \begin{aligned}
 A^{-1} 
 &= \begin{bmatrix}
-\diag(x) - \diag(x)\mathbf{1}_nu^{-1}u\mathbf{1}^\top_n\diag(x)
-    & \diag(x)\mathbf{1}_nu^{-1}\\
--u^{-1}u\mathbf{1}^\top_n \diag(x) & u^{-1}
+\diag(z) - \diag(z)\mathbf{1}_nu^{-1}u\mathbf{1}^\top_n\diag(z)
+    & \diag(z)\mathbf{1}_nu^{-1}\\
+-u^{-1}u\mathbf{1}^\top_n \diag(z) & u^{-1}
 \end{bmatrix}\\
 &= \begin{bmatrix}
-\diag(x) - xx^\top
-    & u^{-1}x\\
-    -x^\top & u^{-1}
+\diag(z) - zz^\top
+    & u^{-1}z\\
+    -z^\top & u^{-1}
 \end{bmatrix}.
 \end{aligned}
 \end{equation}
 Pulling out the top-left $n\times n$ block yields
-the Jacobian $\frac{d x}{d\theta} = \diag(x) - xx^\top$,
+the Jacobian $\frac{d z}{d\theta} = \diag(z) - zz^\top$,
 which agrees with directly differentiating softmax \citep{sparsemax}.
 
 With this, we have shown that we can rewrite softmax as an optimization problem,
@@ -576,6 +611,7 @@ manner.
 %ie code it up and plot memory consumption / speed. maybe not best example though)
 
 \subsection{Limitations}
+\label{sec:softmax-end}
 In order to compute the derivative $\frac{dx}{d\theta}$, we had to invert the Jacobian of $F$.
 However, The first part of $F$ (recall from Eqn.~\ref{eqn:system}), the stationarity condition $\nabla_x\mcL = 0$,
 already involved the Jacobian of the Lagrangian $\mcL$.
