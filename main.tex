@@ -472,10 +472,11 @@ this does not fix the divide-by-zero issue with the second derivative, which we 
 }
 To avoid this, we consider only strictly positive $z \succ 0$ for the IFT.\footnote{
 We saw something similar with the unit circle example, where the derivative was undefined
-for $x=0$ using a particular parameterization.
+for $a=0$ using a particular parameterization (see Fig.~\ref{fig:circle}).
 While the issue in the unit circle case could be solved by using another parameterization
 due to symmetry,
-there is less symmetry in the softmax problem. {\color{red} check this with an expert}
+there is less symmetry in the softmax problem. {\color{red} check this with an expert,
+there may be something in the sparsemax analysis that helps here}
 }
 Given the strict positivity of $z$,
 we can deduce that the Jacobian of $F$ is full rank and therefore has nonzero determinant.
@@ -514,8 +515,8 @@ u\mathbf{1}_n^\top & x^\top\mathbf{1}_n - 1 & 0\\
 \end{bmatrix}^{-1}.
 \end{equation}
 The remainder of this section is compute-intensive;
-feel free to skip ahead to Sec.~\ref{sec:softmax-end} for the conclusion
-of the softmax exercise.
+feel free to skip ahead to Sec.~\ref{sec:limitations} for a discussion
+on the limitations of applying the IFT.
 We use the block-wise inversion formula
 \begin{equation*}
 \begin{bmatrix}
@@ -603,20 +604,22 @@ Pulling out the top-left $n\times n$ block yields
 the Jacobian $\frac{d z}{d\theta} = \diag(z) - zz^\top$,
 which agrees with directly differentiating softmax \citep{sparsemax}.
 
-With this, we have shown that we can rewrite softmax as an optimization problem,
-and differentiate the solution of that problem wrt the parameters in a solver-agnostic
-manner.
+Given the formulation of softmax as an optimization problem, we have
+successfully shown how to differentiate
+the output of softmax wrt the parameters in a solver-agnostic manner using the IFT.
+This concludes the exercise of using the IFT to differentiate through the
+softmax problem.
 
 %(Example showing build-up of memory from reversible SGD vs IFT would be nice here,
 %ie code it up and plot memory consumption / speed. maybe not best example though)
 
 \subsection{Limitations}
-\label{sec:softmax-end}
+\label{sec:limitations}
 In order to compute the derivative $\frac{dx}{d\theta}$, we had to invert the Jacobian of $F$.
 However, The first part of $F$ (recall from Eqn.~\ref{eqn:system}), the stationarity condition $\nabla_x\mcL = 0$,
 already involved the Jacobian of the Lagrangian $\mcL$.
 In general, this means that in order to apply the IFT to solutions of optimization problems,
-we must compute the inverse Hessian (or at least a Hessian-vector-product).
+we must compute the inverse Hessian of the Lagrangian (or at least a Hessian-vector-product).
 The Hessian is a matrix of size $O(n^2)$, and inverting this would take $O(n^3)$ computation.
 Thankfully, there are relatively cheap ways of approximating this computation,
 such as with approximate (inverse) Hessian-vector-product techniques
@@ -624,22 +627,25 @@ such as with approximate (inverse) Hessian-vector-product techniques
 
 \subsection{Extensions}
 The methods we covered can be extended to variations of argmax problems
-other than the softmax problem.
-The softmax problem relaxed the argmax problem by introducing entropy regularization.
+other than the softmax problem.\footnote{
+The argmax problem is given by maximize $z^\top \theta$, subject to $z^\top\mathbf{1}_n=1$
+and $z\succeq 0$.
+}
+The softmax problem altered the argmax problem by introducing entropy regularization.
 Rather than regularizing with entropy, one could instead alter the objective to find
 the Euclidean projection of the parameters onto the probability simplex,
 resulting in SparseMax \citep{sparsemax}.
 While the output of softmax variants often have a closed form expression,
 the IFT provides another way of deriving their Jacobians
-and could potentially pave the way for generalizations
+and could potentially pave the way for differentiating through argmax problems
 that do not have closed-form expressions.
 
 More generally, the IFT can be applied to cases where, unlike softmax,
 we do not have an explicit functional form (i.e., the unit circle),
 and outputs are governed only by a system of equations.
 This includes more general optimization problems, such as quadratic programs \citep{optnet}
-or other convex optimization problems \citep{agrawal2019diffcvx},
-as well as the solutions of differential equations \citep{neuralode}.
+or other convex optimization problems \citep{agrawal2019diffcvx}.
+%as well as the solutions of differential equations \citep{neuralode}.
 
 \section{OptNet}
 OptNet generalizes the methodology applied above to the softmax problem by
