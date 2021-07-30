@@ -85,7 +85,8 @@ This can result in a large slowdown,
 and also requires careful choosing of which computationals subgraphs to checkpoint.
 A second method is an improvement upon checkpointing, called reversible computation \citep{maclaurin2015reversible,gomez2017reversible},
 which improves space complexity at the cost of expressivity, but not speed.
-Reversible computation ensures that the gradient with respect to (wrt) input depends only on the output,
+Reversible computation ensures that the gradient with respect to (wrt) the
+input depends only on the output,
 allowing the input to be discarded during function evaluation.
 This is typically accomplished by ensuring that the input is easily reconstructed from the output,
 restricting the expressivity of layers.
