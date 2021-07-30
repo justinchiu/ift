@@ -613,7 +613,7 @@ In general, this means that in order to apply the IFT to solutions of optimizati
 we must compute the inverse Hessian of the Lagrangian (or at least a Hessian-vector-product).
 The Hessian is a matrix of size $O(n^2)$,
 and inverting this would take $O(n^3)$ computation.\footnote{
-The number of solution variables $m$ scales with the number of primal variables,
+The number of solution variables scales with the number of primal variables,
 but also the number of constraints.
 This potentially makes applying the IFT to optimization problems with exponentially
 many constraints difficult.
