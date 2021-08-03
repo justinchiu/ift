@@ -92,35 +92,41 @@ while still being able to compute the derivative $\frac{dx_{K}}{d\theta}$.
 Large execution traces are not uncommon;
 optimization problems are typically solved with iterative methods,
 resulting in traces very similar to the example given above.
+In order to speed up solvers for these problems,
+one could learn an initialization by differentiating through the
+resulting trace \citep{finn2017maml,kim2018savi,neuralinit}.
 In this report, we will cover the use of the IFT
-as a method for dealing with the space complexity of AD in certain cases.
-We will focus on applying the IFT to differentiating the solutions to optimization problems
+as a method for dealing with the space complexity of AD in exactly these cases.
+In particular,
+we will focus on applying the IFT to differentiating the solutions to optimization problems
 \citep{optnet,agrawal2019diffcvx}.
 
 \section{Related Work}
-There are a variety of methods for overcoming the space limitations of AD,
+There are a variety of methods for reducing the space limitations of AD,
 of which we only mention three: checkpointing, reversible computation, and implicit differentiation.
+
 The first method, checkpointing, improves space complexity at the cost of time \citep{griewank2008autodiff}.
 Rather than storing all intermediate computation,
 checkpointing instead recomputes values when needed.
-This can result in a large slowdown,
+This can result in a slowdown due to recomputation,
 and also requires careful choosing of which computationals subgraphs to checkpoint.
-A second method is an improvement upon checkpointing, called reversible computation \citep{maclaurin2015reversible,gomez2017reversible},
+
+A second method is reversible computation \citep{maclaurin2015reversible,gomez2017reversible},
 which improves space complexity at the cost of expressivity, but not speed.
 Reversible computation ensures that the gradient with respect to (wrt) the
 input depends only on the output,
 allowing the input to be discarded during function evaluation.
 This is typically accomplished by ensuring that the input is easily reconstructed from the output,
 restricting the expressivity of layers.
-A third method is implicit differentiation,
-which potentially improves space complexity at the cost of stronger assumptions.
-Implicit differentiation relies on the implicit function theorem (IFT),
-which gives conditions under which derivatives can be computed independent of
-intermediate computation.
-The primary condition is the characterization of the output as the solution
+
+A third method uses the IFT, which we focus on.
+Application of the IFT potentially improves space complexity at the cost of stronger assumptions.
+The IFT gives conditions under which derivatives can be computed independent of
+intermediate computation,
+with the primary condition being the characterization of the output as the solution
 to a system of equations.
 
-One of the main applications where the space complexity of AD limits applicability
+One of the main applications where the space complexity of AD limits its scalability
 is bilevel optimization.
 Bilevel optimization problems are, as implied by the name,
 optimization problems with another nested inner optimization problem embedded within.
@@ -132,7 +138,7 @@ The application we focus on in this report is expressing individual layers of a 
 as the solution of an optimization problem \citep{optnet,agrawal2019diffcvx,gould2019declarative}.
 This allows models to learn, without heavy manual specification, the constraints of the problem
 in addition to the parameters of the objective.
-An example of this is learning to play Sudoku from only input-output pairs.
+An example of this is learning to play Sudoku from only input-output pairs \citep{optnet}.
 
 Other applications that can be formulated as bilevel optimization problems are
 hyperparameter optimization, metalearning, and variational inference.
