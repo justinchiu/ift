@@ -60,25 +60,42 @@ focusing on the application of implicit differentiation to variational inference
 Gradient-based learning underpins many of the recent successes in machine learning,
 particularly advances involving neural networks.
 The key to the success of gradient-based methods is automatic differentiation (AD),
-which has greatly increased the development speed of machine learning research by
+which greatly increases the development speed of machine learning research by
 allowing practitioners to circumvent the error-prone and time-consuming process
 of computing gradients manually.
 AD operates by reducing functions into compositions of atomic operations,
 for which we have a library of derivatives for,
 and composing those derivatives via the chain rule.
-While efficient relative to the evaluation of the function in question,
-taking only a multiplicative constant longer than the evaluation itself,
-this may be prohibitively expensive if the original function evaluation itself is costly.
-An example of this is if the function takes the form of an unrolled loop,
-a common artifact of applying AD to an iterative method.
-As naive AD requires flattening programs and
-storing all of the intermediate values at each iteration,
-storing the output of all computations at every iteration of a loop can quickly
-become infeasible due to memory limitations.
+The underlying concept behind AD is that a program's execution trace is a valid
+and powerful representation of a function \citep{griewank2008autodiff}.
 
+Storing the execution trace of a program allows AD systems to easily compute derivatives.
+However, longer execution traces can quickly consume a large amount of memory.
+Consider an iterative method, such as gradient descent,
+whose execution trace takes the form of an unrolled loop:
+Given an initial point $\theta = x_0$,
+iterates $x_1, x_2, ..., x_{K}$ are produced by running the gradient descent
+update for $K$ iterations.
+In order to compute $\frac{dx_K}{d\theta}$ using AD,
+we have to store all the $x_k$ iterates
+as well the computation used to produce them.
+Thus, the memory complexity of storing this execution trace scales linearly in the
+number of iterations $K$ as well as the dimensionality of the iterates $x_k$.
+For large $K$, this can be infeasible.
+One method for overcoming the space complexity's dependence on the number of iterations $K$ in
+the above example is to use the implicit function theorem (IFT),
+letting you throw away $x_1$ through $x_{K-1}$
+while still being able to compute the derivative $\frac{dx_{K}}{dx_0}$.
+
+In this report, we will cover the use of the IFT
+as a method for dealing with the space complexity of AD in certain cases.
+We will focus on applying the IFT to differentiating the solutions to optimization problems
+\citep{optnet,agrawal2019diffcvx}.
+
+\section{Related Work}
 There are a variety of methods for overcoming the space limitations of AD,
 of which we only mention three: checkpointing, reversible computation, and implicit differentiation.
-A first method, checkpointing, improves space complexity at the cost of time.
+The first method, checkpointing, improves space complexity at the cost of time \citep{griewank2008autodiff}.
 Rather than storing all intermediate computation,
 checkpointing instead recomputes values when needed.
 This can result in a large slowdown,
@@ -98,19 +115,6 @@ intermediate computation.
 The primary condition is the characterization of the output as the solution
 to a system of equations.
 
-As an example, say we obtain a solution to a system of equations using gradient descent.
-Given the initial point $\theta = x_0$,
-iterates $x_1, x_2, ..., x_{K}$ are produced by running a solver for $K$ iterations.
-If we wanted to compute $\frac{dx_K}{d\theta}$, we would have to store all $x_k$'s
-and the computation used to produce them.
-The IFT lets you throw away $x_1$ through $x_{K-1}$, and gives you the derivative
-$\frac{dx_{K}}{dx_0}$.
-
-In this report, we will cover the use of the implicit function theorem
-in computing derivatives of solutions of optimization problems wrt inputs
-while treating the solver as a black box \citep{optnet}.
-
-\paragraph{Bilevel Optimization}
 One application of implicit differentiation is bilevel optimization.
 Bilevel optimization problems are, as implied by the name,
 optimization problems with another nested inner optimization problem embedded within.
