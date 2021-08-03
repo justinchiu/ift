@@ -175,7 +175,7 @@ see the book by \citet{iftbook}.
 \begin{tikzpicture}[scale=1.1]
 \draw (0,0) circle (2);
 
-\node at ($2*({sqrt(2) / 2}, {sqrt(2) / 2})$) (x)[below left] {$a_1$};
+\node at ($2*({sqrt(2) / 2}, {sqrt(2) / 2})$) (x)[below left] {$p_1$};
 \draw[fill=black] ($2*({sqrt(2) / 2}, {sqrt(2) / 2})$) circle (2pt);
 
 % neighbourhood 
@@ -185,46 +185,54 @@ see the book by \citet{iftbook}.
 
 % tangent
 %\path (2,1) node[point,label={180:P}] {P} at +(120:2){};
-\node at ($2*({sqrt(2) / 2 + .21}, {sqrt(2) / 2 + .21})$) {$\frac{df_1(a_1)}{da}$};
+\node at ($2*({sqrt(2) / 2 + .21}, {sqrt(2) / 2 + .21})$) {$\frac{df_1(\theta_1)}{d\theta}$};
 \draw[thick] ($2*({sqrt(2) / 2 + -.5}, {sqrt(2) / 2 + .5})$) --
     ($2*({sqrt(2) / 2 + .5}, {sqrt(2) / 2 -.5})$);
 
 % singular point
-\node at (2,0) (x2)[left] {$a_2$};
+\node at (2,0) (x2)[left] {$p_2$};
 \draw[fill=white] (2,0) circle (2pt);
+
+
+% axes
+ 
 \end{tikzpicture}
 \caption{
 \label{fig:circle}
-A circle, defined by the relation $a^2 + b^2 - 1 = 0$.
+A circle, defined by the relation $\theta^2 + x^2 - 1 = 0$.
 While we cannot differentiate the relation directly,
-we can compute derivatives at the point $a_1$ using the local parameterization $f_1(a)=\sqrt{1-b^2}$ that holds
-in a neighbourhood around $a_1$, visualized as an arc.
-We cannot use the same parameterization at $a_2$ as the derivative is undefined.
+we can compute derivatives at the point $p_1 = (\theta_1,x_1)$ using the local parameterization
+$f_1(\theta)=\sqrt{1-x^2}$ that holds
+in a neighbourhood around $p_1$, visualized as an arc.
+We cannot use the same parameterization at $p_2 = (\theta_2, x_2)$ as the derivative is undefined.
 In general, the IFT is most useful in cases more complicated than the unit circle,
-where local parameterizations are too complex to write down.
+where local parameterizations are too complex to easily write down.
 }
 \end{figure}
 
 
 \subsection{What is the IFT?}
 Consider the unit circle,
-governed by the relation $F(a,b) = a^2 + b^2 - 1 = 0$,
+governed by the relation $F(\theta,x) = \theta^2 + x^2 - 1 = 0$,
 which can be interpreted as a system of equations.
-As $F$ fails the vertical line test, we cannot write $b$ as a function of $a$ globally.
-This prevents us from taking derivatives, for example $\frac{db}{da}$.
-However, we can use local parameterizations: $f_1(a) = \sqrt{1-b^2}$ if $b > 0$
-or $f_2(a) = -\sqrt{1-b^2}$ if $b<0$.
-Note that the local parameterizations hold only within a neighbourhood of a particular
-solution $(a,b)$.
-These local parameterizations then allow us to take derivatives $\frac{db}{da}$
-at particular points $(a,b)$ using the corresponding parameterization.
+As $F$ fails the vertical line test, we cannot write $x$ as a function of $\theta$ globally.
+This prevents us from taking derivatives, for example $\frac{dx}{d\theta}$.
+However, we can use local parameterizations: $f_1(\theta) = \sqrt{1-x^2}$ if $x > 0$
+or $f_2(\theta) = -\sqrt{1-x^2}$ if $x<0$.
+Note that the local parameterizations are functions that hold
+only within a neighbourhood of a particular solution $(\theta,x)$.
+These local parameterizations then allow us to take derivatives $\frac{dx}{d\theta}$
+at particular points $(\theta,x)$ using the corresponding parameterization.
 See Fig.~\ref{fig:circle} for an illustration.
 The IFT generalizes this example, and formalizes the conditions under which there exist
 continuous local parameterizations for a given relation or system of equations.
 
 While the unit circle in this example has very simple local parameterizations,
-in general local parameterizations can be more complicated: For example,
-a series of iterative updates is a local parameterization.
+in general local parameterizations can be more complicated.\footnote{
+Recall from the introduction that a program trace is a valid representation of a function.
+One could have a local parameterization that is the trace of a long program,
+such as a series of iterative updates.
+}
 Additionally, the IFT does not give the form of the local parameterizations;
 it only guarantees the existence of one around a point and a way to compute its derivative.
 The local parameterization is left implicit, hence the `implicit' in IFT.
