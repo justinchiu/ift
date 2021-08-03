@@ -52,7 +52,8 @@ the direct application of automatic differentiation is infeasible.
 In this report, we review the implicit function theorem (IFT)
 and its use in reducing the cost of computing gradients in scenarios where
 function evaluation is expensive,
-focusing on the application of implicit differentiation to variational inference.
+focusing on the application of the IFT to differentiating
+through the solutions of optimization problems.
 \end{abstract}
 
 \section{Introduction}
@@ -88,6 +89,9 @@ the above example is to use the implicit function theorem (IFT),
 letting you throw away $x_1$ through $x_{K-1}$
 while still being able to compute the derivative $\frac{dx_{K}}{d\theta}$.
 
+Large execution traces are not uncommon;
+optimization problems are typically solved with iterative methods,
+resulting in traces very similar to the example given above.
 In this report, we will cover the use of the IFT
 as a method for dealing with the space complexity of AD in certain cases.
 We will focus on applying the IFT to differentiating the solutions to optimization problems
