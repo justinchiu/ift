@@ -493,13 +493,14 @@ To avoid this, we consider only strictly positive $z \succ 0$ for the IFT.\footn
 We saw a similar issue in the unit circle example, where the derivative
 $\frac{dx}{d\theta}$ was undefined when $x=0$ (see Fig.~\ref{fig:circle}).
 }
-Given the strict positivity of $z$,
+Constraining to strict positivity for $z$,
 we can deduce that the Jacobian of $F$ is full rank and therefore has nonzero determinant.
-This shows that the conditions of the IFT hold.
+This shows that the conditions of the IFT hold for the solution points that are
+feasible, optimal, and have strictly positive $z$.
 
 \subsection*{Step 4: Compute $\frac{dx}{d\theta}$}
-Now that we have shown that the conditions of the IFT hold,
-we can proceed to apply the second part of the IFT in order to compute $\frac{dz}{d\theta}$.
+Now that we have a set of solution points where conditions of the IFT hold,
+we can use the IFT to compute $\frac{dz}{d\theta}$.
 Recall that we have the solution $x = (z,u,v)$; we will switch to $x$ for brevity.
 The second part of the IFT tells us that we can compute the Jacobian of the
 solution mapping $\frac{dx}{d\theta} = \frac{dx^*(\theta)}{d\theta}
