@@ -68,7 +68,7 @@ AD operates by reducing functions into compositions of atomic operations,
 for which we have a library of derivatives for,
 and composing those derivatives via the chain rule.
 The underlying concept behind AD is that a program's execution trace is a valid
-and powerful representation of a function \citep{griewank2008autodiff}.
+and useful representation of a function \citep{griewank2008autodiff}.
 {\color{red}Maybe a diagram of an execution trace would be good here}
 
 Storing the execution trace of a program allows AD systems to easily compute derivatives.
@@ -91,7 +91,7 @@ letting you throw away $x_1$ through $x_{K-1}$
 while still being able to compute the derivative $\frac{dx_{K}}{d\theta}$.
 
 Large execution traces are not uncommon;
-optimization problems are typically solved with iterative methods,
+optimization problems are often solved with iterative methods,
 resulting in traces very similar to the example given above.
 In order to speed up solvers for these problems,
 one could learn an initialization by differentiating through the
@@ -107,15 +107,14 @@ There are a variety of methods for reducing the space limitations of AD,
 of which we only mention three: checkpointing, reversible computation, and implicit differentiation.
 
 The first method, checkpointing, improves space complexity at the cost of time \citep{griewank2008autodiff}.
-Rather than storing all intermediate computation,
+Rather than storing the full execution trace of a program,
 checkpointing instead recomputes values when needed.
 This can result in a slowdown due to recomputation,
-and also requires careful choosing of which computationals subgraphs to checkpoint.
+and also requires careful choosing of which part of the trace to checkpoint and recompute.
 
 A second method is reversible computation \citep{maclaurin2015reversible,gomez2017reversible},
 which improves space complexity at the cost of expressivity, but not speed.
-Reversible computation ensures that the gradient with respect to (wrt) the
-input depends only on the output,
+Reversible computation ensures that a function's derivative depends only on the output,
 allowing the input to be discarded during function evaluation.
 This is typically accomplished by ensuring that the input is easily reconstructed from the output,
 restricting the expressivity of layers.
@@ -146,7 +145,7 @@ hyperparameter optimization, metalearning, and variational inference.
 Hyperparameter optimization formulates hyperparameter tuning as a bilevel optimization problem,
 as for each hyperparameter configuration a new model must be trained as the inner loop
 \citep{maclaurin2015reversible,lorraine2019implasso,lorraine2019hoift,bertrand2020implicit}.
-Gradients must then be propagated through the inner training loop to the outer hyperparameter
+Derivatives must then be propagated through the inner training loop to the outer hyperparameter
 loop.
 Similarly, metalearning learns the parameters of a model such that the model is able to quickly
 be adapted to a new task via gradient descent \citep{finn2017maml,rajeswaran2019imaml}.
@@ -225,7 +224,7 @@ However, we can use local parameterizations: $f_1(\theta) = \sqrt{1-x^2}$ if $x 
 or $f_2(\theta) = -\sqrt{1-x^2}$ if $x<0$.
 Note that the local parameterizations are functions that hold
 only within a neighbourhood of a particular solution point $(\theta,x)$.
-These local parameterizations then allow us to take derivatives $\frac{dx}{d\theta}$
+These local parameterizations then allow us compute the derivative $\frac{dx}{d\theta}$
 at particular solution points $(\theta,x)$ using the corresponding parameterization.
 See Fig.~\ref{fig:circle} for an illustration.
 The IFT generalizes this example, and formalizes the conditions under which there exist
@@ -251,7 +250,7 @@ of just the parameters $\theta$ within a neighbourhood of the solution point $(\
 We saw this in the unit circle example, where the local parameterizations were
 valid around a particular solution point.
 We refer to this function $x^*(\theta) = x$ as a solution mapping,
-and informally refer to $x$ as a solution, and $\theta$ as parameters.
+$x$ a solution, and $\theta$ as parameters.
 These conditions are as follows:
 \begin{enumerate}
 \item We have a solution point $(\theta, x)$ that satisfies the system of equations
@@ -317,7 +316,7 @@ If $x_{K}$ satisfies the conditions of the IFT, then the IFT both
 guarantees the existence of the implicit solution mapping $x_K = x^*(\theta)$
 (dashed line)
 and tells us how to compute $\frac{dx^*(\theta)}{d\theta}$.
-This is useful if the execution trace of the iterative procedure (squiggly line),
+This is useful if the execution trace of the iterative procedure (squiggly line)
 is too expensive to store in memory for use in automatic differentiation.
 }
 %\end{minipage}
