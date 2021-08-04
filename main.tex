@@ -71,7 +71,6 @@ The underlying concept behind AD is that a program's execution trace is a valid
 and useful representation of a function \citep{griewank2008autodiff},
 where the execution trace is a history of all the computation performed
 during the evaluation of a program used to express a function.
-%{\color{red}Maybe a diagram of an execution trace would be good here}
 
 Storing the execution trace of a program allows AD systems to easily compute derivatives.
 However, longer execution traces can quickly consume a large amount of memory.
@@ -715,12 +714,15 @@ the main difference is the learnable parameters in the constraints.
 As the application of the IFT is very similar, we will not cover it in as much
 detail as the softmax problem.
 
-Similar to the softmax problem, we will first assume we already have a solution,
-this time provided by a solver.\footnote{
+Similar to the softmax problem, we will first assume we already have a solution.
+Unlike in the softmax problem, we assume the the solution to the QP is provided by a solver,
+as there may not be a closed-form solution.\footnote{
 One contribution of OptNet was the extension of a state-of-the-art interior point
 solver \citep{optnet}, and its adaptation to parallel machines (GPUs) and batch processing.
 While outside the scope of this report, see the paper by \citet{optnet} for the details.
 }
+In this case, the execution trace of the solver may be too large to store in memory,
+necessitating the use of the IFT.
 
 \subsection*{Step 2: The KKT conditions determine the system of equations}
 The Lagrangian of the QP is given by
