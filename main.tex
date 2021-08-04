@@ -68,8 +68,10 @@ AD operates by reducing functions into compositions of atomic operations,
 for which we have a library of derivatives for,
 and composing those derivatives via the chain rule.
 The underlying concept behind AD is that a program's execution trace is a valid
-and useful representation of a function \citep{griewank2008autodiff}.
-{\color{red}Maybe a diagram of an execution trace would be good here}
+and useful representation of a function \citep{griewank2008autodiff},
+where the execution trace is a history of all the computation performed
+during the evaluation of a program used to express a function.
+%{\color{red}Maybe a diagram of an execution trace would be good here}
 
 Storing the execution trace of a program allows AD systems to easily compute derivatives.
 However, longer execution traces can quickly consume a large amount of memory.
