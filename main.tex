@@ -690,28 +690,34 @@ Quadratic programs take the following form:
 \begin{equation}
 \label{eqn:qp}
 \begin{aligned}
-\textrm{minimize } \quad & \frac12 x^\top Q x + q^\top x\\
-\textrm{subject to } \quad & Ax = b\\
-& Gx \leq h,
+\textrm{minimize } \quad & \frac12 z^\top Q z + q^\top z\\
+\textrm{subject to } \quad
+& Gz \leq h\\
+& Az = b,
 \end{aligned}
 \end{equation}
-where we optimize over $x$ and the parameters are $\theta = \set{Q, q, A, b, G, h}$.
+where we optimize over $z\in\R^n$ and the parameters are $\theta = \set{Q, q, A, b, G, h}$,
+with $Q\in\R^{n\times n}\succeq0, q\in\R^n, A\in\R^{m\times n},b\in\R^{m},G\in\R^{p\times n},
+h\in\R^p$.
 Compared to the softmax problem in Eqn.~\ref{eqn:softmax-opt},
-we see that the main difference is the learnable parameters in the constraints.
-As the application of the IFT is almost identical, we will not cover it in as much
+the main difference is the learnable parameters in the constraints.
+As the application of the IFT is very similar, we will not cover it in as much
 detail as the softmax problem.
 
 Similar to the softmax problem, we will first assume we already have a solution,
-provided by a solver.
-The second contribution of OptNet was the extension of a state-of-the-art interior point
+provided by a solver.\footnote{
+One contribution of OptNet was the extension of a state-of-the-art interior point
 solver \citep{optnet}, and its adaptation to parallel machines (GPUs) and batch processing.
 While outside the scope of this report, see the paper by \citet{optnet} for the details.
+}
 
 \subsection*{Step 2: The KKT conditions determine the system of equations}
 The Lagrangian of the QP is given by
 $$
-\mcL(\theta,z,u,v) = \frac12 z^\top Qz + q^\top z + u^\top(Gz-h) + v^\top(Az-b).
+\mcL(\theta,z,u,v) = \frac12 z^\top Qz + q^\top z + u^\top(Gz-h) + v^\top(Az-b),
 $$
+introducing dual variables $u\in\R^p,v\in\R^m$,
+where we have the solution $x = (z,u,v)$.
 
 We use the following subset of the KKT conditions to determine our system of equations:
 stationarity, primal feasibility (equality), and complementary slackness.
@@ -719,15 +725,21 @@ This yields, written in full,
 \begin{equation}
 \begin{aligned}
 Qz + q + G^\top u + A^\top v  &= \mathbf{0}_n\\
-\diag(u)(Gz-h) &= \mathbf{0}_n\\
-\diag(v)(Az-b) &= \mathbf{0}_{n}.
+\diag(u)(Gz-h) &= \mathbf{0}_p\\
+\diag(v)(Az-b) &= \mathbf{0}_m.
 \end{aligned}
 \end{equation}
 
 \subsection*{Step 3: Check the conditions of the IFT}
+The only nontrivial part is checking that the Jacobian matrix of $F$ is
+not singular at the solution point $(\theta,x)$.
 
 \subsection*{Step 4: Compute $\frac{dx}{d\theta}$}
-
+We could then compute
+$\frac{dx}{d\theta} = \left[\frac{dF(\theta,x)}{dx}\right]^{-1}\frac{dF(\theta,x)}{d\theta}$
+by hand or numerically.
+\citet{optnet} also show how to obtain the vector-Jacobian product efficiently
+using quantities readily available from a QP solver.
 
 \section{Semi-Amortized Variational Inference (POSTPONED / dont read)}
 We now apply the IFT to variational inference.
