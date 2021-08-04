@@ -69,6 +69,7 @@ for which we have a library of derivatives for,
 and composing those derivatives via the chain rule.
 The underlying concept behind AD is that a program's execution trace is a valid
 and powerful representation of a function \citep{griewank2008autodiff}.
+{\color{red}Maybe a diagram of an execution trace would be good here}
 
 Storing the execution trace of a program allows AD systems to easily compute derivatives.
 However, longer execution traces can quickly consume a large amount of memory.
@@ -94,7 +95,7 @@ optimization problems are typically solved with iterative methods,
 resulting in traces very similar to the example given above.
 In order to speed up solvers for these problems,
 one could learn an initialization by differentiating through the
-resulting trace \citep{finn2017maml,kim2018savi,neuralinit}.
+execution trace of the iterative method \citep{finn2017maml,kim2018savi,neuralinit}.
 In this report, we will cover the use of the IFT
 as a method for dealing with the space complexity of AD in exactly these cases.
 In particular,
@@ -199,10 +200,15 @@ see the book by \citet{iftbook}.
 \end{tikzpicture}
 \caption{
 \label{fig:circle}
-A circle, defined by the relation $\theta^2 + x^2 - 1 = 0$.
-While we cannot differentiate the relation directly,
-we can compute derivatives at the point $p_1 = (\theta_1,x_1)$ using the local parameterization
-$f_1(\theta)=\sqrt{1-x^2}$ that holds
+A circle, defined by the relation $F(\theta,x) = \theta^2 + x^2 - 1 = 0$.
+We view $\theta$ as a parameter, $x$ as a solution to $F(\theta,x)=0$ given $\theta$
+and the pair $(\theta,x)$ is a solution point.
+Our goal is to compute the derivative $\frac{dx}{d\theta}$.
+While we cannot differentiate the relation $F$ directly as it is not a function,
+we can compute the derivative at the solution point $p_1 = (\theta_1,x_1)$
+using the local parameterization (or solution mapping) $f_1(\theta)=\sqrt{1-x^2}$,
+yielding $\frac{dx}{d\theta}= \frac{df_1(\theta)}{d\theta}$.
+This parameterization holds
 in a neighbourhood around $p_1$, visualized as an arc.
 We cannot use the same parameterization at $p_2 = (\theta_2, x_2)$ as the derivative is undefined.
 In general, the IFT is most useful in cases more complicated than the unit circle,
@@ -210,8 +216,6 @@ where local parameterizations are too complex to easily write down.
 }
 \end{figure}
 
-
-\subsection{What is the IFT?}
 Consider the unit circle,
 governed by the relation $F(\theta,x) = \theta^2 + x^2 - 1 = 0$,
 which can be interpreted as a system of equations.
@@ -220,9 +224,9 @@ This prevents us from taking derivatives, for example $\frac{dx}{d\theta}$.
 However, we can use local parameterizations: $f_1(\theta) = \sqrt{1-x^2}$ if $x > 0$
 or $f_2(\theta) = -\sqrt{1-x^2}$ if $x<0$.
 Note that the local parameterizations are functions that hold
-only within a neighbourhood of a particular solution $(\theta,x)$.
+only within a neighbourhood of a particular solution point $(\theta,x)$.
 These local parameterizations then allow us to take derivatives $\frac{dx}{d\theta}$
-at particular points $(\theta,x)$ using the corresponding parameterization.
+at particular solution points $(\theta,x)$ using the corresponding parameterization.
 See Fig.~\ref{fig:circle} for an illustration.
 The IFT generalizes this example, and formalizes the conditions under which there exist
 continuous local parameterizations for a given relation or system of equations.
@@ -231,7 +235,7 @@ While the unit circle in this example has very simple local parameterizations,
 in general local parameterizations can be more complicated.\footnote{
 Recall that a program trace is a valid representation of a function.
 One could have a local parameterization that is the trace of a long program,
-such as a series of iterative updates.
+such as one that consists of a series of iterative updates.
 }
 Additionally, the IFT does not give the form of the local parameterizations;
 it only guarantees the existence of one around a point and a way to compute its derivative.
@@ -243,34 +247,46 @@ and $\mathbf{0}_S$, where $S$ denotes the shape, i.e. $\mathbf{0}_m\in\R^m$.
 }
 and a solution point $(\theta,x) \in \R^n\times\R^m$,
 the IFT gives sufficient conditions under which $x$ can locally be written as a function
-of just the parameters $\theta$ within a neighbourhood of the solution point $(\theta,x)$.\footnote{
-Going back to the unit circle example, the local parameterizations were only valid around
-a particular $(a,b)$ point.
-In that example, $a$ was the parameter and $b$ the solution.
-}
+of just the parameters $\theta$ within a neighbourhood of the solution point $(\theta,x)$.
+We saw this in the unit circle example, where the local parameterizations were
+valid around a particular solution point.
 We refer to this function $x^*(\theta) = x$ as a solution mapping,
-and informally refer to $x$ as a solution, as $\theta$ are parameters.
+and informally refer to $x$ as a solution, and $\theta$ as parameters.
 These conditions are as follows:
 \begin{enumerate}
 \item We have a solution point $(\theta, x)$ that satisfies the system of equations
     $F(\theta, x) = 0$.
 \item $F$ has at least continuous first derivatives: $F \in \mcC^1$.
-\item The Jacobian matrix of $F$ wrt $x$ evaluated at the solution point $(\theta,x)$ is nonsingular:
+\item The Jacobian matrix
+    of $F$ wrt $x$ evaluated at the solution point $(\theta,x)$ is nonsingular:
     $\det \frac{d F(\theta,x)}{d x} \neq 0$.
 \end{enumerate}
 Assuming these conditions hold for $F$ at $(\theta,x)$, the IFT
-asserts the existence of the implicit solution mapping $x^*(\theta):\R^n\to\R^m$,
+asserts the existence of the implicit solution mapping $x^*(\theta):\R^n\to\R^m$
+(at the solution point $(\theta,x)$),
 and that the derivative of the solution mapping is given by
 $\frac{d x^*(\theta)}{d\theta} = -[\frac{dF(\theta,x)}{dx}]^{-1}
-    \frac{d F(\theta,x)}{d\theta}$.
+    \frac{d F(\theta,x)}{d\theta} \in \R^{m\times n}$.
 
-{\color{red} still searching for a good intuitive explanation.}
+\paragraph{Notation: Jacobian Matrix}
+Given a function $F:\R^n\times\R^m\to\R^m$, we denote the Jacobian matrix evaluated at
+the point $(\theta,x)\in\R^n\times\R^m$ as
+\begin{equation*}
+\frac{dF(\theta,x)}{d(\theta,x)} = \begin{bmatrix}
+    \frac{dF(\theta,x)}{d\theta} &\frac{dF(\theta,x)}{dx} 
+\end{bmatrix},
+\end{equation*}
+where we have the matrix of partial derivatives
+\begin{equation*}
+\frac{dF(\theta,x)}{d\theta} = \begin{bmatrix}
+    \frac{dF_1(\theta,x)}{d\theta_1} & \cdots & \frac{dF_1(\theta,x)}{d\theta_n} \\
+    \vdots & \ddots & \vdots \\
+    \frac{dF_m(\theta,x)}{d\theta_m} & \cdots & \frac{dF_m(\theta,x)}{d\theta_n} \\
+\end{bmatrix}\in\R^{m\times n},
+\end{equation*}
+and similarly for $\frac{dF(\theta,x)}{dx}\in\R^{m\times m}$.
 
-\subsection{How is the IFT useful?}
-As mentioned in Sec.~\ref{sec:intro}, the IFT is useful for saving memory when performing
-automatic differentiation.
-The main benefit of the IFT is that once we have a solution to a system of equations,
-we can forget about how we obtained that solution but still compute derivatives.
+%{\color{red} still searching for a good intuitive explanation.}
 
 \begin{figure}
 \centering
@@ -301,13 +317,14 @@ If $x_{K}$ satisfies the conditions of the IFT, then the IFT both
 guarantees the existence of the implicit solution mapping $x_K = x^*(\theta)$
 (dashed line)
 and tells us how to compute $\frac{dx^*(\theta)}{d\theta}$.
-This is useful if the iterative procedure (squiggly line), is too expensive
-to store in memory for use in automatic differentiation.
+This is useful if the execution trace of the iterative procedure (squiggly line),
+is too expensive to store in memory for use in automatic differentiation.
 }
 %\end{minipage}
 \end{figure}
 
-In particular, we will show how to compute derivatives of the solution of an optimization problem
+We can now proceed to use the IFT
+to compute derivatives of the solution of an optimization problem
 wrt parameters of the problem without storing intermediate computations,
 as illustrated in Fig.~\ref{fig:optift}.
 We will use the optimality criteria of the optimization problem to define a system of equations,
@@ -317,7 +334,7 @@ as the output of a layer within a neural network,
 as done in OptNet \citep{optnet}.
 %We will then discuss the problem addressed by this method in OptNet.
 
-Afterwards, we will cover an application of the IFT to speeding up variational inference.
+%Afterwards, we will cover an application of the IFT to speeding up variational inference.
 
 \section{Embedding Optimization inside a Neural Network}
 As an introductory example,
@@ -328,49 +345,12 @@ After checking the conditions of the IFT hold, we can then compute derivatives.
 Since the Jacobian of softmax is known, we can directly verify that the IFT gives
 the correct answer.
 
-\subsection{Learning via the chain rule}
-Before we get into the details of softmax, we first motivate the learning problem.
-Neural networks consist of stacks of layers,
-all of which take the output of the previous layer as input.
-In order to train neural networks we rely on reverse mode AD, or backpropagation.
-Reverse mode AD propagates error information backward through the network via the chain rule.
-Key to this process is the Jacobian matrix of each layer, the matrix of partial derivatives
-of the layer's outputs wrt its inputs.
-
-Given a function $F:\R^n\times\R^m\to\R^m$, we denote the Jacobian evaluated at
-the point $(\theta,x)\in\R^n\times\R^m$ as
-\begin{equation*}
-\frac{dF(\theta,x)}{d(\theta,x)} = \begin{bmatrix}
-    \frac{dF(\theta,x)}{d\theta} &\frac{dF(\theta,x)}{dx} 
-\end{bmatrix},
-\end{equation*}
-where we have the matrix of partial derivatives
-\begin{equation*}
-\frac{dF(\theta,x)}{d\theta} = \begin{bmatrix}
-    \frac{dF_1(\theta,x)}{d\theta_1} & \cdots & \frac{dF_1(\theta,x)}{d\theta_n} \\
-    \vdots & \ddots & \vdots \\
-    \frac{dF_m(\theta,x)}{d\theta_1} & \cdots & \frac{dF_m(\theta,x)}{d\theta_n} \\
-\end{bmatrix},
-\end{equation*}
-and similarly for $\frac{dF(\theta,x)}{dx}\in\R^{m\times m}$.
-
-In order to embed an optimization layer inside a neural network,
-we must provide the Jacobian of our layer for use in an AD system.\footnote{
-This is a slight simplification. We often need to provide
-at least the vector-Jacobian product.
-}
-With this in mind, we proceed to review softmax and its equivalent formulation
-as an optimization problem.
-
 \subsection{Softmax}
 Softmax is often used to parameterize categorical distributions within neural networks,
 such as in attention layers.
-It has its origins in statistical mechanics and decision theory, and functions
-as a differentiable surrogate for argmax.
-
-Softmax assumes that we have $n$ items with independent utilities, $\theta \in \R^n$,
-which indicate preferences.
-Softmax then gives the following distribution over items:
+Given $n$ items with independent utilities, where $\theta \in \R^n$
+indicate preferences,
+softmax gives the following distribution over items:
 $z_i = \frac{\exp(\theta_i)}{\sum_j \exp(\theta_j)}$, with $z\in\R^n$.
 While there is a closed-form equation
 for both softmax and its Jacobian,
@@ -378,7 +358,8 @@ we use it as an introduction to the mechanism
 behind OptNet (and other differentiable optimization layers)
 \citep{optnet,agrawal2019diffcvx}.
 
-The output of softmax is the solution of the following optimization problem \citep{gao2018properties}:
+The output of softmax is the solution of the following constrained optimization problem
+\citep{gao2018properties}:
 \begin{equation}
 \label{eqn:softmax-opt}
 \begin{aligned}
@@ -387,21 +368,25 @@ The output of softmax is the solution of the following optimization problem \cit
 & z_i \geq 0, \forall i,
 \end{aligned}
 \end{equation}
-where $H(z) = -\sum_i z_i \log z_i$ is the entropy.\footnote{
-We have taken care to use the variable $z$
-for the primal variable of the softmax problem, rather than $x$.
-This is because, as we will soon see, the solution point of the resulting system
-of equations must also include dual variables.
-}
-We will refer to this as the softmax problem.\footnote{
-Removing the entropy regularization term results in an optimization problem
-whose solution is argmax: maximize $z^\top\theta$, subject to $z^\top\mathbf{1}_n=1$
+where $H(z) = -\sum_i z_i \log z_i$ is the entropy.
+The first term in the objective, $z^\top\theta$, is highest when $z$ points in the
+same direction as $\theta$.
+Given the constraint that $z$ must sum to one and have nonnegative entries,
+maximizing just the first term subject to those constraints results in a solution
+that picks out the highest component of $\theta$, i.e. $\argmax(\theta)$.
+The addition of the entropy term penalizes solutions that put too much
+mass on just a few items, resulting in a smoothed version of argmax.
+We will refer to this entropy-regularized version as the softmax problem.\footnote{
+Removing the entropy regularization term results in the argmax optimization problem:
+maximize $z^\top\theta$, subject to $z^\top\mathbf{1}_n=1$
 and $z \succeq 0$.
 }
 
 Our goal is to compute the Jacobian of softmax
 $\frac{dz}{d\theta} = \frac{d\softmax(\theta)}{d\theta}$
-using the IFT and the optimization problem above, as an exercise.
+using the IFT and the optimization problem above.
+While this may seem trivial because softmax has a closed form expression for
+both the output and Jacobian, it is a worthwhile exercise in applying the IFT.
 Applying the IFT to optimization problems consists of four steps:
 \begin{enumerate}
 \item Find a solution to the optimization problem.
@@ -411,27 +396,26 @@ Applying the IFT to optimization problems consists of four steps:
 \end{enumerate}
 
 We assume the first step has been done for us,
-and we have some solution $z$ to the softmax problem.
+and we have a solution $z$ to the softmax problem.\footnote{
+This is trivial for softmax since we can compute it using the closed form
+expression.
+However, in more general optimization problems, we would obtain $z$ from a solver.}
 We will then use the IFT to compute gradients of $z$ wrt the parameters $\theta$
 by following the rest of the steps.
 
-\subsection{The KKT conditions determine $F$}
+\subsection*{Step 2: The KKT conditions determine the system of equations}
 Given an optimization problem, the Karush-Kuhn-Tucker (KKT) conditions
 determine a system of equations that the solution must satisfy,
 i.e the optimality criteria \citep{kkt-thesis,kkt}.
 They are, roughly, stationarity (the gradient should be 0 at a local optima)
 and feasibility (the constraints of the problem should not be violated).
 For a thorough introduction to the KKT conditions, see chapter 5 of \citet{bv-cvxbook}
-or the \href{https://en.wikipedia.org/wiki/Karush-Kuhn-Tucker\_conditions}{Wikipedia article}.\footnote{
-If this is your first time seeing the KKT conditions, please check out
-one of the suggested references
-and make your way back here to flex your new knowledge.
-}
+or the \href{https://en.wikipedia.org/wiki/Karush-Kuhn-Tucker\_conditions}{Wikipedia article}
 
 We will use the KKT conditions of the softmax problem in
 Eqn.~\ref{eqn:softmax-opt} to determine the function $F$ in the IFT.
 First, we introduce dual variables $u\in\R,v\in\R^n$ and write out the Lagrangian:
-$$\mcL(\theta, z, u, v) = z^\top\theta + H(z) + u(z^\top \mathbf{1} - 1) + v^\top z.$$
+$$\mcL(\theta, z, u, v) = z^\top\theta + H(z) + u(z^\top \mathbf{1}_n - 1) + v^\top z.$$
 We therefore have the solution point $(\theta,z,u,v)$, with parameters $\theta$
 and solution $x=(z,u,v)$.
 We then have the following necessary conditions for a solution $(z,u,v)$,
@@ -461,15 +445,30 @@ u(z^{\top} \mathbf{1}_n - 1) &= 0\\
 \end{equation}
 Note that the first and third equations are vector-valued.
 
-Now we can check the conditions of the IFT.
-We assumed we were given an optimal and therefore feasible solution $x=(z,u,v)$
-which must satisfy $F(\theta, z,u,v) = 0$,\footnote{
+This completes the second step, where we chose a subset of the KKT conditions
+in order to produce a nonlinear system of equations.
+We can now proceed check the conditions of the IFT,
+which will determine whether $F$ is locally well-behaved
+at the solution point $(\theta, z,u,v)$.
+
+\subsection*{Step 3: Check the conditions of the IFT}
+The IFT requires the following three conditions:
+\begin{itemize}
+    \item $F(\theta,z,u,v) = 0$,
+    \item $F$ has at least continuous first derivatives,
+    \item $\det\frac{dF(\theta,z,u,v)}{d(z,u,v)} \ne 0$,
+        or equivalently $\frac{dF(\theta,z,u,v)}{d(z,u,v)}$
+        is full rank.
+\end{itemize}
+The first condition holds as we have a solution to the optimization problem
+and $F$ was chosen using the KKT conditions.\footnote{
 Recall that softmax also has a closed form expression.}
-and $F$ has continuous first derivatives, i.e. $F \in \mcC^1$.
-All that remains is to check that the Jacobian matrix $\frac{dF(\theta,z,u,v)}{d(z,u,v)}$
+The second condition also holds, as $F$ has continuous first derivatives.
+All that remains is to check the third condition,
+that the Jacobian matrix $\frac{dF(\theta,z,u,v)}{d(z,u,v)}$
 (evaluated at the solution point) is non-singular.
 
-The Jacobian $\frac{dF(\theta,z,u,v)}{d(z,u,v)}\in\R^{2n+1\times 2n+1}$ is given by
+The Jacobian matrix $\frac{dF(\theta,z,u,v)}{d(z,u,v)}\in\R^{2n+1\times 2n+1}$ is given by
 \begin{equation}
 \label{eqn:f-jac}
 \frac{dF}{d(z,u,v)}=
@@ -495,7 +494,7 @@ Given the strict positivity of $z$,
 we can deduce that the Jacobian of $F$ is full rank and therefore has nonzero determinant.
 This shows that the conditions of the IFT hold.
 
-\subsection{The Jacobian of Softmax}
+\subsection*{Step 4: Compute $\frac{dx}{d\theta}$}
 Now that we have shown that the conditions of the IFT hold,
 we can proceed to apply the second part of the IFT in order to compute $\frac{dz}{d\theta}$.
 Recall that we have the solution $x = (z,u,v)$; we will switch to $x$ for brevity.
@@ -628,7 +627,8 @@ softmax problem.
 
 \subsection{Limitations}
 \label{sec:limitations}
-In order to compute the derivative $\frac{dx}{d\theta}$, we had to invert the Jacobian of $F$.
+In order to compute the derivative $\frac{dx}{d\theta}$, we had to invert the Jacobian of $F$,
+i.e. compute $\left[\frac{dF(\theta,x)}{dx}\right]^{-1}$.
 However, The first part of $F$ (recall from Eqn.~\ref{eqn:system}), the stationarity condition
 $\frac{d}{dx}\mcL = 0$,
 already involved the Jacobian of the Lagrangian $\mcL$.
@@ -677,7 +677,6 @@ with optimization layers to allows them to perform well
 on tasks with rigid constraints, such as learning to play
 Sudoku from only inputs and outputs \citep{optnet}.
 
-\subsection{Quadratic Programs}
 OptNet applies the IFT to quadratic programs (QPs) in particular.
 As the simplest nonlinear optimization problem,
 QPs strike a balance between expressivity and computational tractability \citep{simplex}.
@@ -691,7 +690,7 @@ Quadratic programs take the following form:
 \begin{equation}
 \label{eqn:qp}
 \begin{aligned}
-\textrm{maximize } \quad & \frac12 x^\top Q x + q^\top x\\
+\textrm{minimize } \quad & \frac12 x^\top Q x + q^\top x\\
 \textrm{subject to } \quad & Ax = b\\
 & Gx \leq h,
 \end{aligned}
@@ -699,7 +698,32 @@ Quadratic programs take the following form:
 where we optimize over $x$ and the parameters are $\theta = \set{Q, q, A, b, G, h}$.
 Compared to the softmax problem in Eqn.~\ref{eqn:softmax-opt},
 we see that the main difference is the learnable parameters in the constraints.
-As the application of the IFT is almost identical, we will not cover it in detail.
+As the application of the IFT is almost identical, we will not cover it in as much
+detail as the softmax problem.
+
+Similar to the softmax problem, we will first assume we already have a solution,
+provided by a solver.
+
+\subsection*{Step 2: The KKT conditions determine the system of equations}
+The Lagrangian of the QP is given by
+$$
+\mcL(\theta,z,u,v) = \frac12 z^\top Qz + q^\top z + u^\top(Gz-h) + v^\top(Az-b).
+$$
+
+We use the following subset of the KKT conditions to determine our system of equations:
+stationarity, primal feasibility (equality), and complementary slackness.
+This yields, written in full,
+\begin{equation}
+\begin{aligned}
+Qz + q + G^\top u + A^\top v  &= \mathbf{0}_n\\
+\diag(u)(Gz-h) &= \mathbf{0}_n\\
+\diag(v)(Az-b) &= \mathbf{0}_{n}.
+\end{aligned}
+\end{equation}
+
+\subsection*{Step 3: Check the conditions of the IFT}
+
+\subsection*{Step 4: Compute $\frac{dx}{d\theta}$}
 
 The second contribution of OptNet was the extension of a state-of-the-art interior point
 solver \citep{optnet}, and its adaptation to parallel machines (GPUs) and batch processing.
