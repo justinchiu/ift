@@ -703,6 +703,9 @@ detail as the softmax problem.
 
 Similar to the softmax problem, we will first assume we already have a solution,
 provided by a solver.
+The second contribution of OptNet was the extension of a state-of-the-art interior point
+solver \citep{optnet}, and its adaptation to parallel machines (GPUs) and batch processing.
+While outside the scope of this report, see the paper by \citet{optnet} for the details.
 
 \subsection*{Step 2: The KKT conditions determine the system of equations}
 The Lagrangian of the QP is given by
@@ -725,9 +728,6 @@ Qz + q + G^\top u + A^\top v  &= \mathbf{0}_n\\
 
 \subsection*{Step 4: Compute $\frac{dx}{d\theta}$}
 
-The second contribution of OptNet was the extension of a state-of-the-art interior point
-solver \citep{optnet}, and its adaptation to parallel machines (GPUs) and batch processing.
-While outside the scope of this report, see the paper by \citet{optnet} for the details.
 
 \section{Semi-Amortized Variational Inference (POSTPONED / dont read)}
 We now apply the IFT to variational inference.
