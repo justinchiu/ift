@@ -133,9 +133,6 @@ One of the main applications where the space complexity of AD limits its scalabi
 is bilevel optimization.
 Bilevel optimization problems are, as implied by the name,
 optimization problems with another nested inner optimization problem embedded within.
-Methods for solving bilevel optimization typically proceed iteratively.
-For every iteration when solving the outer optimization problem,
-we must additionally solve an inner optimization problem.
 
 The application we focus on in this report is expressing individual layers of a neural network declaratively
 as the solution of an optimization problem \citep{optnet,agrawal2019diffcvx,gould2019declarative}.
