@@ -223,7 +223,9 @@ This prevents us from taking derivatives, for example $\frac{dx}{d\theta}$.
 However, we can use local parameterizations: $f_1(\theta) = \sqrt{1-x^2}$ if $x > 0$
 or $f_2(\theta) = -\sqrt{1-x^2}$ if $x<0$.
 Note that the local parameterizations are functions that hold
-only within a neighbourhood of a particular solution point $(\theta,x)$.
+only within a neighbourhood of a particular solution point $(\theta,x)$;
+there may be solution points where we simply cannot compute a particular derivative,
+e.g. $\frac{dx}{d\theta}$ when $x=0$.
 These local parameterizations then allow us compute the derivative $\frac{dx}{d\theta}$
 at particular solution points $(\theta,x)$ using the corresponding parameterization.
 See Fig.~\ref{fig:circle} for an illustration.
@@ -448,10 +450,12 @@ This completes the second step, where we chose a subset of the KKT conditions
 in order to produce a nonlinear system of equations.
 We can now proceed check the conditions of the IFT,
 which will determine whether $F$ is locally well-behaved
-at the solution point $(\theta, z,u,v)$.
+at a particular solution point $(\theta, z,u,v)$.
 
 \subsection*{Step 3: Check the conditions of the IFT}
-The IFT requires the following three conditions:
+The IFT requires the following three conditions,
+which must be checked on a case-by-case basis for particular
+solution points:
 \begin{itemize}
     \item $F(\theta,z,u,v) = 0$,
     \item $F$ has at least continuous first derivatives,
@@ -487,7 +491,7 @@ this does not fix the divide-by-zero issue with the second derivative, which we 
 }
 To avoid this, we consider only strictly positive $z \succ 0$ for the IFT.\footnote{
 We saw a similar issue in the unit circle example, where the derivative
-$\frac{db}{da}$ was undefined when $a=0$ (see Fig.~\ref{fig:circle}).
+$\frac{dx}{d\theta}$ was undefined when $x=0$ (see Fig.~\ref{fig:circle}).
 }
 Given the strict positivity of $z$,
 we can deduce that the Jacobian of $F$ is full rank and therefore has nonzero determinant.
