@@ -84,11 +84,14 @@ we have to store all the $x_k$ iterates
 as well the computation used to produce them.
 Thus, the memory complexity of storing this execution trace scales linearly in the
 number of iterations $K$ as well as the dimensionality of the iterates $x_k$.
-For large $K$, this can be infeasible.
+For large $K$, this can be infeasible as the space complexity is at least $\Omega(K\dim(x_k))$,
+as this ignores the traces produced by the updates themselves.
 One method for overcoming the space complexity's dependence on the number of iterations $K$ in
 the above example is to use the implicit function theorem (IFT),
 letting you throw away $x_1$ through $x_{K-1}$
 while still being able to compute the derivative $\frac{dx_{K}}{d\theta}$.
+Naively, this comes at the cost of $O(\dim(x_k)^2)$ space and $O(\dim(x_k)^3)$ time,
+trading off the dependence on K for a larger dependence on $\dim(x_k)$.
 
 Large execution traces are not uncommon;
 optimization problems are often solved with iterative methods,
@@ -131,7 +134,7 @@ to a system of equations.
 
 One of the main applications where the space complexity of AD limits its scalability
 is bilevel optimization.
-Bilevel optimization problems are, as implied by the name,
+Bilevel optimization problems are
 optimization problems with another nested inner optimization problem embedded within.
 
 The application we focus on in this report is expressing individual layers of a neural network declaratively
@@ -619,6 +622,10 @@ A^{-1}
 Pulling out the top-left $n\times n$ block yields
 the Jacobian $\frac{d z}{d\theta} = \diag(z) - zz^\top$,
 which agrees with directly differentiating softmax \citep{sparsemax}.
+While we were able to take advantage of sparsity in this computation,
+such sparsity may not be available in general.
+Without sparsity, inverting the Jacobian of $F$, $\frac{dF(\theta,x)}{dx}$,
+costs $O(n^3)$ time and $O(n^2)$ space.
 
 Given the formulation of softmax as an optimization problem, we have
 successfully shown how to differentiate
