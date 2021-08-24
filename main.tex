@@ -34,7 +34,7 @@
 \usepackage[utf8]{inputenc}
 
 
-\title{An Introduction to an Application of the Implicit Function Theorem}
+\title{An Application of the Implicit Function Theorem}
 
 \author{Justin Chiu \\
   Cornell Tech \\
@@ -47,8 +47,9 @@ Gradient-based learning forms the foundation of modern machine learning,
 and automatic differentiation allows ML practitioners to easily compute gradients.
 While automatic differentiation only costs a constant multiple of the time and space
 required to evaluate a function, it has its limitations.
-In particular, when evaluating a function itself is expensive,
-the direct application of automatic differentiation is infeasible.
+In particular, when evaluating a function itself requires many computations,
+the direct application of reverse-mode
+automatic differentiation may quickly run out of memory.
 In this report, we review the implicit function theorem (IFT)
 and its use in reducing the cost of computing gradients in scenarios where
 function evaluation is expensive,
@@ -76,23 +77,64 @@ Storing the execution trace of a program allows AD systems to easily compute der
 However, longer execution traces can quickly consume a large amount of memory.
 Consider an iterative method, such as gradient descent,
 whose execution trace takes the form of an unrolled loop:
-Given an initial point $\theta = x_0$,
-iterates $x_1, x_2, ..., x_{K}$ are produced by running the gradient descent
-update for $K$ iterations.
-In order to differentiate through this procedure with AD
-(i.e. compute $\frac{dx_K}{d\theta}$),
+Given an initial point $\theta = x_0\in\R^n$,
+iterates $x_1, x_2, ..., x_{K-1}$ and final point $x=x_K$
+are produced by running the gradient descent
+update for $K$ iterations, i.e. $x_{t+1} = x_{t} + \alpha \nabla f(x_t)$.
+In order to differentiate through this procedure with reverse-mode AD
+(i.e. compute $\frac{dx}{d\theta}$),
 we have to store all the $x_k$ iterates
 as well the computation used to produce them.
 Thus, the memory complexity of storing this execution trace scales linearly in the
-number of iterations $K$ as well as the dimensionality of the iterates $x_k$.
-For large $K$, this can be infeasible as the space complexity is at least $\Omega(K\dim(x_k))$,
+number of iterations $K$ as well as the dimensionality of the iterates $x_k$\footnote{
+Forward-mode would get away from the linear dependence on $K$,
+but would require $n=\dim(\theta)$ sweeps.
+If all sweeps are performed in parallel,
+forward-mode AD would take $\Omega(n^2)$ memory as opposed to $\Omega(Kn)$ for reverse-mode.
+}.
+For large $K$, this can be infeasible as the space complexity is at least $\Omega(Kn)$,
 as this ignores the traces produced by the updates themselves.
 One method for overcoming the space complexity's dependence on the number of iterations $K$ in
 the above example is to use the implicit function theorem (IFT),
-letting you throw away $x_1$ through $x_{K-1}$
-while still being able to compute the derivative $\frac{dx_{K}}{d\theta}$.
-Naively, this comes at the cost of $O(\dim(x_k)^2)$ space and $O(\dim(x_k)^3)$ time,
-trading off the dependence on $K$ for a larger dependence on $\dim(x_k)$.
+letting you throw away intermediate computation (e.g. iterates $x_1$ through $x_{K-1}$)
+while still being able to compute the derivative $\frac{dx}{d\theta}$.
+Naively, this comes at the cost of $O(n^2)$ space and $O(n^3)$ time,
+trading off the dependence on $K$ for a larger dependence on $n$.\footnote{
+This can be reduced by using approximate vector-inverse Hessian products,
+as we will show later in this report.
+}
+We provide an illustration in Fig.~\ref{fig:optift}.
+
+\begin{figure}
+\centering
+\begin{tikzpicture}[scale=1.1]
+%\draw (0,0) circle (2);
+\draw (-2,-2) rectangle (2,2);
+
+\node[circle,fill=black, minimum size=2pt, inner sep=0] (x) at (1,.5) {};
+\node at (x)[above right] {$\theta$};
+\node[circle,fill=black, minimum size=2pt, inner sep=0] (y) at (-1,-.5) {};
+\node at (y)[below left] {$x_{K}$};
+
+\draw[snake it] (x)      to [bend right = 45] (y);
+\path[dashed] (x) edge (y) node[midway,below right]{$x^*(\theta)$};
+
+\end{tikzpicture}
+\caption{
+\label{fig:optift}
+Reverse-mode automatic differentiation of an iterative method consumes memory
+linear in the number of iterations,
+illustrated by the squiggly line from initial point $\theta$ to the final point $x$.
+Such methods are not uncommon, found in bilevel optimization problems such as
+hyperparameter optimization and metalearning.
+The implicit function theorem (IFT)
+provides conditions under which there exists an implicit function,
+$x^*(\theta) = x$ (dashed line), which we can use to compute the derivative
+$\frac{dx_K}{d\theta}$ without storing all intermediate computation.
+}
+%\end{minipage}
+\end{figure}
+
 
 Large execution traces are not uncommon;
 optimization problems are often solved with iterative methods,
@@ -209,16 +251,24 @@ and the pair $(\theta,x)$ is a solution point.
 Our goal is to compute the derivative $\frac{dx}{d\theta}$.
 While we cannot differentiate the relation $F$ directly as it is not a function,
 we can compute the derivative at the solution point $p_1 = (\theta_1,x_1)$
-using the local parameterization (or solution mapping) $f_1(\theta)=\sqrt{1-x^2}$,
-yielding $\frac{dx}{d\theta}= \frac{df_1(\theta)}{d\theta}$.
+using the local parameterization (or solution mapping) $f_1(\theta)=\sqrt{1-x^2}$.
 This parameterization holds
 in a neighbourhood around $p_1$, visualized as an arc.
-We cannot use the same parameterization at $p_2 = (\theta_2, x_2)$ as the derivative is undefined.
+We can use the IFT to compute
+$\frac{dx}{d\theta}= -\left[\frac{dF(\theta,x)}{dx}\right]^{-1}\frac{dF(\theta,x)}{d\theta}$,
+which will agree with the derivative of the local parameterization
+$\frac{df_1(\theta)}{d\theta}$.
+We cannot use the same parameterization at $p_2 = (\theta_2, 0)$ as the derivative is undefined.
 In general, the IFT is most useful in cases more complicated than the unit circle,
 where local parameterizations are too complex to easily write down.
 }
 \end{figure}
 
+Given a relation and some technical conditions that we will go over soon,
+the IFT is used to identify the existence of local
+function parameterizations for particular points,
+and compute the Jacobians of the local function parameterizations for points
+where the conditions for the IFT hold.
 As a motivating example, consider the unit circle,
 governed by the relation $F(\theta,x) = \theta^2 + x^2 - 1 = 0$,
 which can be interpreted as a system of equations.
@@ -232,6 +282,11 @@ there may be solution points where we simply cannot compute a particular derivat
 e.g. $\frac{dx}{d\theta}$ when $x=0$.
 These local parameterizations then allow us compute the derivative $\frac{dx}{d\theta}$
 at particular solution points $(\theta,x)$ using the corresponding parameterization.
+When the conditions of the IFT do not hold a particular point,
+we cannot use the IFT to ensure the existence of a local parameterization
+and therefore cannot use the IFT to compute derivatives.
+In general, this does not mean that the derivative does not exist,
+only that the IFT does not know what it is.
 See Fig.~\ref{fig:circle} for an illustration.
 The IFT generalizes this example, and formalizes the conditions under which there exist
 continuous local parameterizations for a given relation or system of equations.
@@ -269,9 +324,17 @@ These conditions are as follows:
 Assuming these conditions hold for $F$ at $(\theta,x)$, the IFT
 asserts the existence of the implicit solution mapping $x^*(\theta):\R^n\to\R^m$
 (at the solution point $(\theta,x)$),
-and that the derivative of the solution mapping is given by
-$\frac{d x^*(\theta)}{d\theta} = -[\frac{dF(\theta,x)}{dx}]^{-1}
-    \frac{d F(\theta,x)}{d\theta} \in \R^{m\times n}$.
+and that the derivative of the solution mapping wrt the parameters is given by
+\begin{equation}
+    \label{eqn:iftderiv}
+    \frac{d x^*(\theta)}{d\theta} = -\left[\frac{dF(\theta,x)}{dx}\right]^{-1}
+    \frac{d F(\theta,x)}{d\theta} \in \R^{m\times n}.
+\end{equation}
+As long as we have chosen a solution point $(\theta,x)$ that satisfies the conditions,
+we can ignore how we arrived at that solution point and still compute the derivative
+of the solution mapping with the IFT.
+It is important to note that the IFT is local and applies to particular solution points.
+This means that we can pick and choose which solution points we restrict our analysis to.
 
 \paragraph{Notation: Jacobian Matrix}
 Given a function $F:\R^n\times\R^m\to\R^m$, we denote the Jacobian matrix evaluated at
@@ -293,45 +356,11 @@ and similarly for $\frac{dF(\theta,x)}{dx}\in\R^{m\times m}$.
 
 %{\color{red} still searching for a good intuitive explanation.}
 
-\begin{figure}
-\centering
-\begin{tikzpicture}[scale=1.1]
-%\draw (0,0) circle (2);
-\draw (-2,-2) rectangle (2,2);
-
-\node[circle,fill=black, minimum size=2pt, inner sep=0] (x) at (1,.5) {};
-\node at (x)[above right] {$\theta$};
-\node[circle,fill=black, minimum size=2pt, inner sep=0] (y) at (-1,-.5) {};
-\node at (y)[below left] {$x_{K}$};
-
-\draw[snake it] (x)      to [bend right = 45] (y);
-\path[dashed] (x) edge (y) node[midway,below right]{$x^*(\theta)$};
-
-\end{tikzpicture}
-\caption{
-\label{fig:optift}
-An example relationship between the parameters $\theta$,
-solution $x_{K}$ after $K$ iterations of an iterative method,
-and implicit function $x^*(\theta)$ of the IFT.
-The rectangle depicts a space which, in this example,
-contains both $\theta$ and $x_K$.
-This is not necessary for the IFT, but simplifies illustration.
-The parameters $\theta$ provide an initial point, which is then iteratively refined
-into solution $x_{K}$, shown by the squiggly line.
-If $x_{K}$ satisfies the conditions of the IFT, then the IFT both
-guarantees the existence of the implicit solution mapping $x_K = x^*(\theta)$
-(dashed line)
-and tells us how to compute $\frac{dx^*(\theta)}{d\theta}$.
-This is useful if the execution trace of the iterative procedure (squiggly line)
-is too expensive to store in memory for use in automatic differentiation.
-}
-%\end{minipage}
-\end{figure}
-
-We can now proceed to use the IFT
-to compute derivatives of the solution of an optimization problem
-wrt parameters of the problem without storing intermediate computations,
-as illustrated in Fig.~\ref{fig:optift}.
+Given the IFT and necessary notation, we can now proceed to use the IFT
+to compute derivatives of the output of an iterative method,
+as depicted in Fig.~\ref{fig:optift}.
+In particular, we focus on computing derivatives of the solution to a
+constrained optimization problem.
 We will use the optimality criteria of the optimization problem to define a system of equations,
 then apply the IFT to compute the Jacobian of the solution wrt the parameters.
 This methodology allows us to use the solution to an optimization problem
@@ -341,9 +370,9 @@ as done in OptNet \citep{optnet}.
 
 %Afterwards, we will cover an application of the IFT to speeding up variational inference.
 
-\section{Embedding Optimization inside a Neural Network}
+\section{Differentiating through Optimization}
 As an introductory example,
-we will replace the softmax layer of a neural network with an equivalent function
+we will replace softmax with an equivalent function
 defined as the output of an optimization problem, then derive derivatives using the IFT.
 We will start by reviewing softmax and its expression as an optimization problem.
 After checking the conditions of the IFT hold, we can then compute derivatives.
@@ -356,7 +385,7 @@ such as in attention layers.
 Given $n$ items with independent utilities, where $\theta \in \R^n$
 indicate preferences,
 softmax gives the following distribution over items:
-$z_i = \frac{\exp(\theta_i)}{\sum_j \exp(\theta_j)}$, with $z\in\R^n$.
+$z_i = \softmax(\theta)_i = \frac{\exp(\theta_i)}{\sum_j \exp(\theta_j)}$, with $z\in[0,1]^n$.
 While there is a closed-form equation
 for both softmax and its Jacobian,
 we use it as an introduction to the mechanism
@@ -385,6 +414,7 @@ We will refer to this entropy-regularized version as the softmax problem.\footno
 Removing the entropy regularization term results in the argmax optimization problem:
 maximize $z^\top\theta$, subject to $z^\top\mathbf{1}_n=1$
 and $z \succeq 0$.
+This is known as the support function of the set $\set{z\mid z^\top\mathbf{1}_n=1,z\succeq 0}$.
 }
 
 Our goal is to compute the Jacobian of softmax
@@ -395,7 +425,7 @@ both the output and Jacobian, it is a worthwhile exercise in applying the IFT.
 Applying the IFT to optimization problems consists of four steps:
 \begin{enumerate}
 \item Find a solution to the optimization problem.
-\item Write down the system of equations.
+\item Write down a system of equations derived from the optimality conditions.
 \item Check that the conditions of the IFT hold.
 \item Compute the derivative of the implicit solution mapping wrt the parameters.
 \end{enumerate}
@@ -404,21 +434,35 @@ We assume the first step has been done for us,
 and we have a solution $z$ to the softmax problem.\footnote{
 This is trivial for softmax since we can compute it using the closed form
 expression.
-However, in more general optimization problems, we would obtain $z$ from a solver.}
+However, in more general optimization problems, we would obtain $z$ from a solver
+with a large execution trace.}
 We will then use the IFT to compute gradients of $z$ wrt the parameters $\theta$
 by following the rest of the steps.
 
 \subsection*{Step 2: The KKT conditions determine the system of equations}
-Given an optimization problem, the Karush-Kuhn-Tucker (KKT) conditions
-determine a system of equations that the solution must satisfy,
-i.e the optimality criteria \citep{kkt-thesis,kkt}.
-They are, roughly, stationarity (the gradient should be 0 at a local optima)
+In order to apply the IFT,
+we need a system of equations for which our outputs of interest are solution points for.
+The goal of this step is to choose a suitable system of equations.
+This differs from the example of the unit-circle, which was already defined by
+a system of equations.\footnote{
+For a given solution point there may be many suitable systems,
+all of which would be viable as long as they satisfy
+the conditions of the IFT that we will check in step 3.
+}
+
+For solutions of optimization problems, the Karush-Kuhn-Tucker (KKT) conditions
+are a natural choice for defining such a system of equations.
+Given an optimization problem, the KKT conditions
+determine a system of equations that the solution must satisfy
+based on the optimality criteria \citep{kkt-thesis,kkt}.
+They are stationarity (the gradient should be 0 at a local optima)
 and feasibility (the constraints of the problem should not be violated).
 For a thorough introduction to the KKT conditions, see chapter 5 of \citet{bv-cvxbook}
 or the \href{https://en.wikipedia.org/wiki/Karush-Kuhn-Tucker\_conditions}{Wikipedia article}
 
 We will use the KKT conditions of the softmax problem in
-Eqn.~\ref{eqn:softmax-opt} to determine the function $F$ in the IFT.
+Eqn.~\ref{eqn:softmax-opt} to determine the (vector-valued) function $F:\R^n\times\R^m\to\R^m$
+in the IFT.
 First, we introduce dual variables $u\in\R,v\in\R^n$ and write out the Lagrangian:
 $$\mcL(\theta, z, u, v) = z^\top\theta + H(z) + u(z^\top \mathbf{1}_n - 1) + v^\top z.$$
 We therefore have the solution point $(\theta,z,u,v)$, with parameters $\theta$
@@ -439,7 +483,8 @@ determine the $2n+1$ solution variables $x=(z,u,v)$,
 we use the first three conditions: stationary, primal feasibility (equality),
 and complementary slackness.
 
-In full, the system of equations $F(\theta, z,u,v) = 0$ is
+In full, the system of equations $F(\theta, z,u,v) = 0$ we choose
+for the softmax problem is
 \begin{equation}
 \label{eqn:system}
 \begin{aligned}
@@ -456,10 +501,13 @@ We can now proceed check the conditions of the IFT,
 which will determine whether $F$ is locally well-behaved
 at a particular solution point $(\theta, z,u,v)$.
 
-\subsection*{Step 3: Check the conditions of the IFT}
-The IFT requires the following three conditions,
+\subsection*{Step 3: Check that the IFT conditions hold at the solution point}
+Recall that the IFT requires the following three conditions,
 which must be checked on a case-by-case basis for particular
-solution points:
+solution points\footnote{If these conditions do not hold,
+the IFT does not apply at this particular combination of $F$ and solution point.
+The derivative $\frac{dx}{d\theta}$ may still be computed via other means
+if it exists.}:
 \begin{itemize}
     \item $F(\theta,z,u,v) = 0$,
     \item $F$ has at least continuous first derivatives,
@@ -467,7 +515,8 @@ solution points:
         or equivalently $\frac{dF(\theta,z,u,v)}{d(z,u,v)}$
         is full rank.
 \end{itemize}
-The first condition holds as we have a solution to the optimization problem
+Returning to the softmax problem,
+the first condition holds as we have a solution to the optimization problem
 and $F$ was chosen using the KKT conditions.\footnote{
 Recall that softmax also has a closed form expression.}
 The second condition also holds, as $F$ has continuous first derivatives.
@@ -500,15 +549,21 @@ $\frac{dx}{d\theta}$ was undefined when $x=0$ (see Fig.~\ref{fig:circle}).
 Constraining to strict positivity for $z$,
 we can deduce that the Jacobian of $F$ is full rank and therefore has nonzero determinant.
 This shows that the conditions of the IFT hold for the solution points that are
-feasible, optimal, and have strictly positive $z$.
+feasible, optimal, and have strictly positive $z$.\footnote{
+Recall that the IFT applies at particular solution points,
+meaning we can pick and choose which points to analyze.
+In the case of softmax, we can perform a separate analysis
+for solution points on the boundary of the constraint set.
+}
 
 \subsection*{Step 4: Compute $\frac{dx}{d\theta}$}
 Now that we have a set of solution points where conditions of the IFT hold,
 we can use the IFT to compute $\frac{dz}{d\theta}$.
 Recall that we have the solution $x = (z,u,v)$; we will switch to $x$ for brevity.
-The second part of the IFT tells us that we can compute the Jacobian of the
+The second part of the IFT (Eqn.~\ref{eqn:iftderiv})
+tells us that we can compute the Jacobian of the
 solution mapping $\frac{dx}{d\theta} = \frac{dx^*(\theta)}{d\theta}
-= \left[\frac{dF(\theta,x)}{dx}\right]^{-1}\frac{dF(\theta,x)}{d\theta}$,
+= -\left[\frac{dF(\theta,x)}{dx}\right]^{-1}\frac{dF(\theta,x)}{d\theta}$,
 then pick out the relevant components.
 
 The second term, $\frac{dF(\theta,x)}{d\theta}$, is simple.
@@ -624,26 +679,34 @@ which agrees with directly differentiating softmax \citep{sparsemax}.
 While we were able to take advantage of sparsity in this computation,
 such sparsity may not be available in general.
 Without sparsity, inverting the Jacobian of $F$, $\frac{dF(\theta,x)}{dx}$,
-costs $O(n^3)$ time and $O(n^2)$ space.
+costs $O(n^3)$ time and $O(n^2)$ space
+compared to the $O(n)$ time and space for computing softmax and its
+derivative exactly (as well as with the IFT and sparsity).
 
-Given the formulation of softmax as an optimization problem, we have
-successfully shown how to differentiate
-the output of softmax wrt the parameters in a solver-agnostic manner using the IFT.
 This concludes the exercise of using the IFT to differentiate through the
 softmax problem.
+While softmax itself has a closed form expression for both its output and derivative,
+we showed that the IFT can also be used to compute its derivative in a solver-agnostic manner.
+We started by expressing softmax as an optimization problem (Eqn.~\ref{eqn:softmax-opt}),
+then, assuming we had a solution to the softmax problem (regardless of how it was obtained),
+reverse engineered a system of equations using the KKT conditions.
+We then restricted our attention to the set of solution points where we could succssfully
+apply the IFT,
+then applied Eqn.~\ref{eqn:iftderiv} to compute the derivative at a solution point.
 
 %(Example showing build-up of memory from reversible SGD vs IFT would be nice here,
 %ie code it up and plot memory consumption / speed. maybe not best example though)
 
 \subsection{Limitations}
 \label{sec:limitations}
-In order to compute the derivative $\frac{dx}{d\theta}$, we had to invert the Jacobian of $F$,
+In order to compute the derivative $\frac{dx}{d\theta}$, we had to invert the Jacobian of $F$
+(the system of equations derived from the KKT conditions),
 i.e. compute $\left[\frac{dF(\theta,x)}{dx}\right]^{-1}$.
-However, The first part of $F$ (recall from Eqn.~\ref{eqn:system}), the stationarity condition
-$\frac{d}{dx}\mcL = 0$,
+However, the first part of $F$ (recall from Eqn.~\ref{eqn:system}), the stationarity condition
+$\frac{d}{dx}\mcL = 0$
 already involved the Jacobian of the Lagrangian $\mcL$.
 In general, this means that in order to apply the IFT to solutions of optimization problems,
-we must compute the inverse Hessian of the Lagrangian (or at least a Hessian-vector-product).
+we must compute the inverse Hessian of the Lagrangian (or at least an inverse Hessian-vector-product).
 The Hessian is a matrix of size $O(n^2)$,
 and inverting this would take $O(n^3)$ computation.\footnote{
 The number of solution variables scales with the number of primal variables,
@@ -757,9 +820,17 @@ by hand or numerically.
 \citet{optnet} also show how to obtain the vector-Jacobian product efficiently
 using quantities readily available from a QP solver.
 
-\section{Semi-Amortized Variational Inference (POSTPONED / dont read)}
-We now apply the IFT to variational inference.
+\section{Gradient Estimation in Hidden Markov Models}
+We now apply the IFT to structured latent variable models.
+Similar to the softmax case, we can compute both the solution and gradient
+exactly without using too much memory.
+In the case of hidden Markov models (HMMs), we can perform inference in time linear
+in the length of a sequence and quadratic in the number of states and
+space linear in length and the number of states.
 
+
+
+\section{Variational Inference}
 Variational inference has found success in recent applications to generative models,
 in particular by allowing practitioners to depart from conjugate models
 and extend emission models with expressive neural network components.
@@ -832,8 +903,120 @@ In this setting, we will use the KKT conditions of the optimization problem to d
 
 \appendix
 
-\section{Example Appendix}
-\label{sec:appendix}
+\section{Properties of Exponential Family Distributions}
+\label{sec:exp-fam}
+Exponential family distributions are widely used to parameterize graphical models \citep{vi}.
+The classification of a distribution as exponential family simply says that we can write
+their joint distributions with the particular factorization given above,
+which can then be used to derive useful properties common to all exponential
+family distributions.
+These properties, made clearer through the exponential family abstraction,
+are then integral for performing inference.
+In particular, gradient estimation can be written as mapping from
+canonical to mean parameters.
+
+\subsection{Canonical Parameters}
+Exponential family distributions take the form
+\begin{equation}
+    \label{eqn:exp-canon}
+    p(x;\theta) = h(x)\exp(\theta^\top \phi(x)-A(\theta)),
+\end{equation}
+where $h:\mcX\to\R_+$ is the base measure,
+$\theta\in\R^d$ the canonical parameters,
+$\phi:\mcX\to\R^d$ the sufficient statistics\footnote{Potential functions usually refer to
+particular pairs of canonical parameter and sufficient statistic products
+$\theta_\alpha\phi_alpha(x)$ as a function of $x$.},
+and $A:\R^d\to\R$ the log partition function.
+Intuitively, the canonical parameters $\theta$ score configurations $x\in\mcX$,
+with representation $\phi(x)$.
+The log partition function $A(\theta) = \log\int_{\mcX}h(x)\exp(\theta^\top\phi(x))$
+is used to ensure normaliziation of the probability density,
+i.e. $\int_{\mcX}p(x) = 1$.
+The base measure $h:\mcX\to\R$ is also used to ensure proper normalization,
+but is only a function of $x$.
+It can also be used to enforce hard constraints in models by giving
+0 mass to some configurations $x$.
+
+We give three examples of exponential family distributions:
+softmax, hidden Markov models (HMMs)
+and linear chain conditional random fields (CRFs).
+
+\paragraph{Softmax}
+Softmax gives a discrete distribution over $n$ items, where $x\in[1,\ldots,n]$.
+The probability mass function is then $p(x;\theta) = \exp(\theta^\top x - A(\theta))$,
+where $A(\theta) = \log \sum_i \exp(\theta_i) = \log \exp(\theta)^\top\mathbf{1}_n$.
+Thus, the sufficient statistics are $\phi(x)_i = 1(x_i)$ for each $i\in[n]$ and
+the base measure constant $h(x)=1$.
+
+\paragraph{Hidden Markov Models (HMMs)}
+Hidden Markov models (HMMs) give a discrete distribution over sequences $x = (x_1,\ldots,x_T)$,
+where $x_t\in[X]$,
+and latent states $z = (z_1,\ldots,z_T)$, where $z_t\in[Z]$.
+HMMs have the joint distribution
+$p(x,z) = \prod_t p(x_t\mid z_t)p(z_t\mid z_{t-1})$,
+with distinct start state $z_0=\epsilon$.
+We assume each condition distribution is parameterized using softmax,
+and the HMM has canonical parameters $\theta = (O,S)$ for the emission and transitions respectively.
+The emissions are locally normalized, given by $p(x_t\mid z_t) = O 1_{z_t,x_t}$
+where $O\in[0,1]^{ZX}$, $1_{z_t,x_t}\in\R^{ZX}$ is a one-hot vector.
+Local normalization implies $\sum_x O_{z,x}=1$ for a given $z$.
+The transitions are also locally normalized, given by $p(z_t\mid z_{t-1}) = S 1_{z_{t-1},z_t}$,
+where $S\in[0,1]^{Z^2}$, $1_{z_{t-1},z_t}\in\set{0,1}^{Z^2}$ is a one-hot vector.
+Both $O$ and $S$ are vector representations of the observation and state transition
+matrices respectively.
+The sufficient statistics are $\set{1(x_t,z_t)}_{x_t,z_t}$
+and $\set{1(z_{t-1}),1(z_t)}_{z_{t-1},z_t}$ for all $t,x_t,z_{t-1},z_t$.
+The base measure is constant $h(x,z) = 1$.
+
+\paragraph{Linear Chain Conditional Random Fields (CRFs)}
+The linear chain CRF has states $x = (x_1,\ldots,x_T)$, where $x_t\in[Z]$,
+and joint distribution
+$$p(x) = \frac{\prod_t f(z_t; \theta)g(z_{t-1},z_t; \theta)}{\exp(A(\theta))}
+= \exp(\theta^\top \phi(x) - A(\theta)),$$
+where $f:\mcX\to\R_+,g:\mcX\times\mcX\to\R_+$ are unary and binary potentials respectively.
+These potentials are the most common representation of CRFs.
+In the exponential family representation,
+the canonical parameters $\theta\in\R^{(Z + Z^2)T}$ are used to score unary and binary terms,
+given by the sufficient statistics $\phi(x)_{t,1,i} = 1(z_t = i)$ and
+$\phi(x)_{t,2,ij} = 1(z_{t-1} = i, z_t = j)$ for $t,i,j$.
+The base measure is constant $h(x) = 1$.
+
+\subsection{Mean Parameters}
+The mean parameters of exponential family distributions are the expected sufficient statistics:
+$\mu = \Es{p(x)}{\phi(x)}$.
+The space of all possible marginals, obtained by varying the distribution
+$p(x)$, is called the mean parameter space
+$$\mcM = \set{\mu \mid \exists p \textrm{ s.t. } \Es{p}{\phi(x)} = \mu}.$$
+For the particular case of discrete graphical models,
+which is of particular interest,
+we call $\mcM$ the marginal polytope.
+In particular, for discrete models, we have
+$$\mcM = \set{\mu | \sum_x p(x)\phi(x) = \mu, \sum_x p(x) = 1},$$
+expressed as a finitely generated polyhedra.
+By the Minkowski-Weyl theorem, we can equivalently express the marginal polytope
+as a constrained polyhedra, i.e. the convex hull of the sufficient statistics:
+$$\mcM = \conv(\phi(x),x\in\mcX).$$
+This representation is more useful in variational optimization problems,
+as it translates directly to a set of constraints.
+
+\subsection{Forward and Backward Mappings from Canonical to Mean Parameters}
+The forward mapping $\theta\mapsto\mu$ is marginal inference in CRFs,
+while the backward mapping $\mu\mapsto\theta$ corresponds to learning.
+The log partition function $A(\theta)$ is key to both of these mappings:
+\begin{itemize}
+\item[Forward] $\nabla A(\theta) = \mu$
+\item[Backward] $\theta \in \nabla A^*(\mu)$
+\end{itemize}
+where $A^*(\mu)$ denotes the conjugate dual function of $A$.
+When the mean parameters are in the interior of the mean parameter space
+(henceforth referred to as the marginal polytope, as we focus on discrete
+graphical models)
+$\mu\in\mcM^{\circ}$,
+the conjugate dual function $A^*(\mu) = -H(p_{\theta(\mu)})$
+{\color{red} More precise definition following \citet{vi} Thm. 3.4}.
+
+
+\section{Graphical Models}
 
 Neural ODEs use reversibility.
 
