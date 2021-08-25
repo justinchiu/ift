@@ -744,7 +744,7 @@ include conjugate gradient, identity approximations, and other factorizations su
 The methods we covered can be extended to variations of argmax problems
 other than the softmax problem.\footnote{
 The argmax problem is given by maximize $z^\top \theta$, subject to $z^\top\mathbf{1}_n=1$
-and $z\succeq 0$.
+and $z\succeq 0$, otherwise known as the support function of the constraint set.
 }
 The softmax problem altered the argmax problem by introducing entropy regularization.
 Rather than regularizing with entropy, one could instead alter the objective to find
