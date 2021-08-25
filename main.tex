@@ -696,7 +696,7 @@ then applied Eqn.~\ref{eqn:iftderiv} to compute the derivative at a solution poi
 
 We can immediately apply the methodology developed in this section to more general
 optimization problems, as we will explore in Sec.~\ref{sec:optnet}.
-In those problems closed form solutions do not exist, and iterative solvers must be used
+In those problems closed form solutions may not exist, and iterative solvers must be used
 where applying reverse-mode AD would take $\Omega(Kn)$ space with $K$ steps,
 while the IFT would naively take $O(n^2)$ space.
 
@@ -843,8 +843,28 @@ by hand or numerically.
 \citet{optnet} also show how to obtain the vector-Jacobian product efficiently
 using quantities readily available from a QP solver.
 
-\section{Gradient Estimation in Hidden Markov Models}
+\section{Speedups and Spacedowns}
+In this section we will revisit the softmax problem and experiment with
+whether the derivative can be approximated more efficiently in either time or space.
+First we will review the efficient vector-Jacobian product (VJP),
+then attempt to apply different approximations in the IFT to see if we can
+find a sublinear algorithm.
+
+Recall softmax,
+$$\softmax(\theta)_i = \frac{\exp(\theta_i)}{\sum_j \exp(\theta_j)},$$
+and the softmax problem from Eqn.~\ref{eqn:softmax-opt},
+\begin{equation}
+\begin{aligned}
+\textrm{maximize } \quad & z^\top\theta + H(z)\\
+\textrm{subject to } \quad & z^\top \mathbf{1} = 1\\
+& z_i \geq 0, \forall i.
+\end{aligned}
+\end{equation}
+
+
+\section{Gradient Estimation in Structured Attention}
 We now apply the IFT to structured latent variable models.
+
 Similar to the softmax case, we can compute both the solution and gradient
 exactly without using too much memory.
 In the case of hidden Markov models (HMMs), we can perform inference in time linear
