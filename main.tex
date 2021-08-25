@@ -287,7 +287,7 @@ When the conditions of the IFT do not hold a particular point,
 we cannot use the IFT to ensure the existence of a local parameterization
 and therefore cannot use the IFT to compute derivatives.
 In general, this does not mean that the derivative does not exist,
-only that the IFT does not know what it is.
+only that the IFT does not apply.
 See Fig.~\ref{fig:circle} for an illustration.
 The IFT generalizes this example, and formalizes the conditions under which there exist
 continuous local parameterizations for a given relation or system of equations.
@@ -528,9 +528,9 @@ that the Jacobian matrix $\frac{dF(\theta,z,u,v)}{d(z,u,v)}$
 The Jacobian matrix $\frac{dF(\theta,z,u,v)}{d(z,u,v)}\in\R^{2n+1\times 2n+1}$ is given by
 \begin{equation}
 \label{eqn:f-jac}
-\frac{dF}{d(z,u,v)}=
+\frac{dF(\theta,z,u,v)}{d(z,u,v)}=
 \begin{bmatrix}
-\diag(z)^{-1} & -\mathbf{1}_n & -I_{n\times n} \\
+-\diag(z)^{-1} & \mathbf{1}_n & I_{n\times n} \\
 u\mathbf{1}_n^\top & z^\top\mathbf{1}_n - 1 & 0\\
 \diag(v) & 0 & \diag(z)
 \end{bmatrix}.
@@ -583,7 +583,7 @@ Next, we have to invert the Jacobian from Eqn.~\ref{eqn:f-jac}:
 \begin{equation}
 \label{eqn:dsystem-matrix}
 \left[\frac{dF(\theta,x)}{dx}\right]^{-1} = \begin{bmatrix}
-\diag(z)^{-1} & -\mathbf{1}_n & -I_{n\times n} \\
+-\diag(z)^{-1} & \mathbf{1}_n & I_{n\times n} \\
 u\mathbf{1}_n^\top & x^\top\mathbf{1}_n - 1 & 0\\
 \diag(v) & 0 & \diag(z)
 \end{bmatrix}^{-1}.
@@ -607,8 +607,8 @@ C & D
 \end{equation*}
 where
 \begin{align*}
-A = \begin{bmatrix} \diag(z)^{-1} & -\mathbf{1}_n \\ u\mathbf{1}_n^\top & 0 \end{bmatrix}&\qquad\qquad
-B = \begin{bmatrix}-I_{n\times n} \\ 0\end{bmatrix}\\
+A = \begin{bmatrix} -\diag(z)^{-1} & \mathbf{1}_n \\ u\mathbf{1}_n^\top & 0 \end{bmatrix}&\qquad\qquad
+B = \begin{bmatrix}I_{n\times n} \\ 0\end{bmatrix}\\
 C = \begin{bmatrix}\diag(v) & 0\end{bmatrix} &\qquad\qquad
 D = \diag(z).
 \end{align*}
@@ -637,7 +637,7 @@ we only have to solve for the upper-left $n\times n$ block of $A^{-1}\in\R^{n+1\
 To do so, we will repeat the same block-wise inverse computation.
 Let us denote
 $$A
-= \begin{bmatrix} \diag(z)^{-1} & -\mathbf{1}_n \\ u\mathbf{1}_n^\top & 0 \end{bmatrix}
+= \begin{bmatrix} -\diag(z)^{-1} & \mathbf{1}_n \\ u\mathbf{1}_n^\top & 0 \end{bmatrix}
 = \begin{bmatrix}E & F \\ G & H\end{bmatrix}.
 $$
 First, we compute the Schur complement of $A$,
@@ -649,7 +649,7 @@ Since $z$ is feasible, we have $A/E = u$ due to the equality constraints
 Then, we have
 \begin{equation}
 A^{-1} = \begin{bmatrix}
-\diag(z)^{-1} & -\mathbf{1}_n\\
+-\diag(z)^{-1} & \mathbf{1}_n\\
 u\mathbf{1}^\top_n & 0
 \end{bmatrix}^{-1}
 =\begin{bmatrix}E & F \\ G & H\end{bmatrix}^{-1}
@@ -663,18 +663,19 @@ Plugging in,
 \begin{aligned}
 A^{-1} 
 &= \begin{bmatrix}
-\diag(z) - \diag(z)\mathbf{1}_nu^{-1}u\mathbf{1}^\top_n\diag(z)
+-\diag(z) + \diag(z)\mathbf{1}_nu^{-1}u\mathbf{1}^\top_n\diag(z)
     & \diag(z)\mathbf{1}_nu^{-1}\\
 -u^{-1}u\mathbf{1}^\top_n \diag(z) & u^{-1}
 \end{bmatrix}\\
 &= \begin{bmatrix}
-\diag(z) - zz^\top
+-\diag(z) + zz^\top
     & u^{-1}z\\
     -z^\top & u^{-1}
 \end{bmatrix}.
 \end{aligned}
 \end{equation}
-Pulling out the top-left $n\times n$ block yields
+Pulling out the top-left $n\times n$ block and negating it
+(see Eqns.~\ref{eqn:iftderiv} and \ref{eqn:df-dtheta}) yields
 the Jacobian $\frac{d z}{d\theta} = \diag(z) - zz^\top$,
 which agrees with directly differentiating softmax \citep{sparsemax}.
 While we were able to take advantage of sparsity in this computation,
@@ -753,7 +754,7 @@ resulting in SparseMax \citep{sparsemax}.
 While the output of softmax variants often have a closed form expression,
 the IFT provides another way of deriving their Jacobians
 and could potentially pave the way for differentiating through argmax problems
-that do not have closed-form expressions.
+that do not have closed-form expressions, e.g. for problems with complicated constraints.
 
 More generally, the IFT can be applied to cases where, unlike softmax,
 we do not have an explicit functional form (i.e., the unit circle),
@@ -863,14 +864,11 @@ and the softmax problem from Eqn.~\ref{eqn:softmax-opt},
 
 
 \section{Gradient Estimation in Structured Attention}
-We now apply the IFT to structured latent variable models.
+We now apply the IFT to differentiating through the marginals of
+structured latent variable models.
 
 Similar to the softmax case, we can compute both the solution and gradient
-exactly without using too much memory.
-In the case of hidden Markov models (HMMs), we can perform inference in time linear
-in the length of a sequence and quadratic in the number of states and
-space linear in length and the number of states.
-
+exactly in time polynomial in $n$.
 
 
 \section{Variational Inference}
