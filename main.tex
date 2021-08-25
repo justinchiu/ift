@@ -272,8 +272,9 @@ where the conditions for the IFT hold.
 As a motivating example, consider the unit circle,
 governed by the relation $F(\theta,x) = \theta^2 + x^2 - 1 = 0$,
 which can be interpreted as a system of equations.
-As $F$ fails the vertical line test, we cannot write $x$ as a function of $\theta$ globally.
-This prevents us from taking derivatives, for example $\frac{dx}{d\theta}$.
+We would like to compute the derivative $\frac{dx}{d\theta}$.
+As $F$ fails the vertical line test, we cannot write $x$ as a function of $\theta$ globally
+and therefore cannot compute a derivative that holds globally.
 However, we can use local parameterizations: $f_1(\theta) = \sqrt{1-x^2}$ if $x > 0$
 or $f_2(\theta) = -\sqrt{1-x^2}$ if $x<0$.
 Note that the local parameterizations are functions that hold
@@ -281,7 +282,7 @@ only within a neighbourhood of a particular solution point $(\theta,x)$;
 there may be solution points where we simply cannot compute a particular derivative,
 e.g. $\frac{dx}{d\theta}$ when $x=0$.
 These local parameterizations then allow us compute the derivative $\frac{dx}{d\theta}$
-at particular solution points $(\theta,x)$ using the corresponding parameterization.
+locally at particular solution points $(\theta,x)$ using the corresponding parameterization.
 When the conditions of the IFT do not hold a particular point,
 we cannot use the IFT to ensure the existence of a local parameterization
 and therefore cannot use the IFT to compute derivatives.
