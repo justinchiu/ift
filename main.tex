@@ -693,8 +693,12 @@ reverse engineered a system of equations using the KKT conditions.
 We then restricted our attention to the set of solution points where we could succssfully
 apply the IFT,
 then applied Eqn.~\ref{eqn:iftderiv} to compute the derivative at a solution point.
+
 We can immediately apply the methodology developed in this section to more general
 optimization problems, as we will explore in Sec.~\ref{sec:optnet}.
+In those problems closed form solutions do not exist, and iterative solvers must be used
+where applying reverse-mode AD would take $\Omega(Kn)$ space with $K$ steps,
+while the IFT would naively take $O(n^2)$ space.
 
 %(Example showing build-up of memory from reversible SGD vs IFT would be nice here,
 %ie code it up and plot memory consumption / speed. maybe not best example though)
@@ -719,6 +723,22 @@ many constraints difficult.
 Thankfully, there are relatively cheap ways of approximating this computation,
 such as with approximate (inverse) Hessian-vector-product techniques
 \citep{rajeswaran2019imaml,lorraine2019hoift}.
+\citet{lorraine2019hoift} in particular show that the derivative can be approximated
+in $O(n)$ space using a truncated Neumann series approximation for the inverse Hessian.
+
+Additionally, comparing the speed of computing derivatives via AD on a large trace versus the IFT
+must be done on a case-by-case basis.
+For softmax, let us pretend we solved the softmax problem with an iterative method in $K$ steps.
+Computing the derivative from the execution trace would take $O(Kn)$ time using reverse-mode AD,
+while the naive IFT would take $O(n^3)$ time, giving an asymptotic speedup only when $K > n^2$.
+In practice, the constant factors in the runtime will play a large factor in which approach
+is better, as well as any approximations made to make either approach more efficient\footnote{
+For unrolled AD, we could not fully solve the optimization problem and use the truncated trace.
+For the IFT, vector-inverse Hessian vector product approximations other than the Neumann series
+include conjugate gradient, identity approximations, and other factorizations such as K-fac
+\citep{kfac}.
+}.
+
 
 \subsection{Extensions}
 The methods we covered can be extended to variations of argmax problems
