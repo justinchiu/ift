@@ -740,6 +740,22 @@ include conjugate gradient, identity approximations, and other factorizations su
 \citep{kfac}.
 }.
 
+\subsection{Automatic Differentiation as Schur Complements}
+The IFT can be used to derive both forward-mode and reverse-mode AD.
+The link between matrix inversion and AD is via Schur complements,
+as used in the above above computation when finding the derivative of softmax.
+In particular, a small number of intermediate values or sparse dependencies
+results in easily computable inverses via Schur complements.
+To see why this is the case, consider the computational complexity of Gaussian elimination:
+in the worst case, elimination takes $O(n^3)$ computation.
+Reducing a row can take $O(n^2)$ computation if it requires a linear combination of all the
+other rows, and this must be performed for all $n$ rows.
+A triangular matrix requires $O(n^2)$ computation for backsubstitutions,
+and a triangular matrix with at most $k$ nonzero entries per column will take $O(nk)$ computation.
+Execution traces have extended Jacobians $\frac{dF(\theta,x)}{dx}$
+with triangular structure (and often quite sparse) resulting in much better time complexities
+than $O(n^3)$.
+See Section 9.1 of \citet{griewank2008autodiff} for more information.
 
 \subsection{Extensions}
 The methods we covered can be extended to variations of argmax problems
@@ -870,6 +886,29 @@ structured latent variable models.
 Similar to the softmax case, we can compute both the solution and gradient
 exactly in time polynomial in $n$.
 
+\section{Network Traffic Problem}
+In this section, we consider the problem of optimizing network traffic.
+A network is a graph $G = (V,E)$ with vertices $v_i\in V$ and edges
+$e_{ij}\in E = V\times V$.
+We would like to maximize the total traffic through a series of $K$ paths across the network.
+A path is a sequence of edges $p_{st}^k = (e_{sv_1},e_{v_1v_2},\ldots,e_{v_mt})$
+from source vertex $s$ to target vertex $t$.
+A path contributes a constant amount of traffic $x_p$ to each included edge $e\in p$.
+We denote the set of paths that pass through a particular edge by
+$\pi(e) = \set{p \mid e \in p}$.
+We additionally have the following constraints: traffic must be nonnegative $x_p \geq 0$,
+and each edge has a capacity constraint that the total traffic on that
+edge cannot exceed $\sum_{p\in\pi(e)} x_p \le c_e$.
+
+This yields the following optimization problem:
+\begin{equation}
+\label{eqn:network-opt}
+\begin{aligned}
+\textrm{maximize } \quad & \sum_{p} x_p\\
+\textrm{subject to } &\sum_{p\in\pi(e)}x_p \le c_e, \forall e\\
+& x_p \geq 0, \forall p.
+\end{aligned}
+\end{equation}
 
 \section{Variational Inference}
 Variational inference has found success in recent applications to generative models,

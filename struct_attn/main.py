@@ -48,8 +48,10 @@ def faster():
 def manual():
     log_partition = A(log_potentials)
     marginals, = torch.autograd.grad(log_partition, log_potentials, retain_graph=True, create_graph=True)
-    vhp = torch.autograd.grad(marginals, log_potentials, grad_output)
+    vhp, = torch.autograd.grad(marginals, log_potentials, grad_output)
     return vhp
+
+print(torch.allclose(faster(), manual()))
 
 #timeit(slow) # 15.5s
 timeit(faster) # .0075s
