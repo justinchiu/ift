@@ -584,7 +584,7 @@ Next, we have to invert the Jacobian from Eqn.~\ref{eqn:f-jac}:
 \label{eqn:dsystem-matrix}
 \left[\frac{dF(\theta,x)}{dx}\right]^{-1} = \begin{bmatrix}
 -\diag(z)^{-1} & \mathbf{1}_n & I_{n\times n} \\
-u\mathbf{1}_n^\top & x^\top\mathbf{1}_n - 1 & 0\\
+u\mathbf{1}_n^\top & z^\top\mathbf{1}_n - 1 & 0\\
 \diag(v) & 0 & \diag(z)
 \end{bmatrix}^{-1}.
 \end{equation}
@@ -744,6 +744,9 @@ include conjugate gradient, identity approximations, and other factorizations su
 The IFT can be used to derive both forward-mode and reverse-mode AD.
 The link between matrix inversion and AD is via Schur complements,
 as used in the above above computation when finding the derivative of softmax.
+
+{\color{red} Introduce extended Jacobian and system of equations}
+
 In particular, a small number of intermediate values or sparse dependencies
 results in easily computable inverses via Schur complements.
 To see why this is the case, consider the computational complexity of Gaussian elimination:
@@ -878,8 +881,52 @@ and the softmax problem from Eqn.~\ref{eqn:softmax-opt},
 \end{aligned}
 \end{equation}
 
+We would like to compute $\frac{dz}{d\theta} = \diag(z)-zz^\top$.
+The exact directional derivative (vjp) can be computed in $O(n)$ operations,
+given by $v^\top \frac{dz}{d\theta} = z \cdot (v - (z^\top v)\mathbf{1}_n)$
+(this can be computed in $2n$ multiplications and $3n$ additions).
+We will explore whether using vector-inverse Hessian products can result in fewer operations.
 
-\section{Gradient Estimation in Structured Attention}
+\paragraph{IFT and Neumann Approximation}
+Our first attempt will use a combination of the IFT and a Neumann approximation.
+Recall that the IFT tells us
+$$\frac{dx}{d\theta} = \frac{dx^*(\theta)}{d\theta}
+= -\left[\frac{dF(\theta,x)}{dx}\right]^{-1}\frac{dF(\theta,x)}{d\theta},$$
+where 
+$$\frac{dF(\theta,x)}{d\theta} = \begin{bmatrix}
+    I_{n\times n}\\
+    \mathbf{0}_{(n+1)\times (n+1)}
+\end{bmatrix}$$
+and
+$$
+\left[\frac{dF(\theta,x)}{dx}\right]^{-1} = \begin{bmatrix}
+-\diag(z)^{-1} & \mathbf{1}_n & I_{n\times n} \\
+u\mathbf{1}_n^\top & 0 & 0\\
+\mathbf{0}_{n\times n} & 0 & \diag(z)
+\end{bmatrix}^{-1}.
+$$
+Recall that we restrict our attention to $z\succ 0$, so $v=0$ by complementary slackness. 
+The Neumann approximation is given by $X^{-1} = \sum_{k=0}^\infty (I-X)^k$.
+We will use a truncated (at $k=1$) Neumann approximation
+\begin{align*}
+    \left[\frac{dF(\theta,x)}{dx}\right]^{-1}
+    &\approx 2I_{n \times n} - \frac{dF(\theta,x)}{dx}\\
+    &= \begin{bmatrix}
+    2I_{n\times n} + \diag(z)^{-1} & -\mathbf{1}_n & -I_{n\times n} \\
+    -u\mathbf{1}_n^\top & 2 & 0\\
+    \mathbf{0}_{n\times n} & 0 & 2I_{n\times n}-\diag(z)
+    \end{bmatrix},
+\end{align*}
+yielding
+$$\frac{dz}{d\theta}\approx -2I - \diag(z)^{-1}.$$
+Computing the vector-Jacobian product (vjp), we have
+$$v^\top \frac{dz}{d\theta} \approx -v \circ(2\mathbf{1}_n + z^{-1}).$$
+While this is still $O(n)$, this does potentically take fewer operations than the exact derivative:
+$n$ multiplications, $n$ reciprocals, and $n$ additions if the constant terms are pre-computed.
+
+{\color{red} Check that Neumann series converges to correct inverse}
+
+\section{Structured Attention}
 We now apply the IFT to differentiating through the marginals of
 structured latent variable models.
 
