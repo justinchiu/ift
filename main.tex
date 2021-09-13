@@ -489,7 +489,7 @@ for the softmax problem is
 \begin{equation}
 \label{eqn:system}
 \begin{aligned}
-\theta + -\log(z) - 1 + u\mathbf{1}_n + v &= \mathbf{0}_n\\
+\theta + -\log(z) - \mathbf{1}_n + u\mathbf{1}_n + v &= \mathbf{0}_n\\
 u(z^{\top} \mathbf{1}_n - 1) &= 0\\
 \diag(v)z &= \mathbf{0}_n.
 \end{aligned}
@@ -531,8 +531,8 @@ The Jacobian matrix $\frac{dF(\theta,z,u,v)}{d(z,u,v)}\in\R^{2n+1\times 2n+1}$ i
 \frac{dF(\theta,z,u,v)}{d(z,u,v)}=
 \begin{bmatrix}
 -\diag(z)^{-1} & \mathbf{1}_n & I_{n\times n} \\
-u\mathbf{1}_n^\top & z^\top\mathbf{1}_n - 1 & 0\\
-\diag(v) & 0 & \diag(z)
+u\mathbf{1}_n^\top & z^\top\mathbf{1}_n - 1 & \mathbf{0}^\top_n\\
+\diag(v) & \mathbf{0}_n & \diag(z)
 \end{bmatrix}.
 \end{equation}
 Since a solution must be feasible, we know that $z^\top\mathbf{1}-1=0$ and $u > 0$.
@@ -901,8 +901,8 @@ and
 $$
 \left[\frac{dF(\theta,x)}{dx}\right]^{-1} = \begin{bmatrix}
 -\diag(z)^{-1} & \mathbf{1}_n & I_{n\times n} \\
-u\mathbf{1}_n^\top & 0 & 0\\
-\mathbf{0}_{n\times n} & 0 & \diag(z)
+u\mathbf{1}_n^\top & 0 & \mathbf{0}_n^\top\\
+\mathbf{0}_{n\times n} & \mathbf{0}_n & \diag(z)
 \end{bmatrix}^{-1}.
 $$
 Recall that we restrict our attention to $z\succ 0$, so $v=0$ by complementary slackness. 
@@ -913,8 +913,8 @@ We will use a truncated (at $k=1$) Neumann approximation
     &\approx 2I_{n \times n} - \frac{dF(\theta,x)}{dx}\\
     &= \begin{bmatrix}
     2I_{n\times n} + \diag(z)^{-1} & -\mathbf{1}_n & -I_{n\times n} \\
-    -u\mathbf{1}_n^\top & 2 & 0\\
-    \mathbf{0}_{n\times n} & 0 & 2I_{n\times n}-\diag(z)
+    -u\mathbf{1}_n^\top & 2 & \mathbf{0}^\top_n\\
+    \mathbf{0}_{n\times n} & \mathbf{0}_n & 2I_{n\times n}-\diag(z)
     \end{bmatrix},
 \end{align*}
 yielding
@@ -924,107 +924,67 @@ $$v^\top \frac{dz}{d\theta} \approx -v \circ(2\mathbf{1}_n + z^{-1}).$$
 While this is still $O(n)$, this does potentically take fewer operations than the exact derivative:
 $n$ multiplications, $n$ reciprocals, and $n$ additions if the constant terms are pre-computed.
 
-{\color{red} Check that Neumann series converges to correct inverse}
+This approximation is quite poor in practice.
+We check if the higher-order terms of the Neumann series result in a better approximation.
 
-\section{Structured Attention}
+We first note that we can solve for the Lagrange multiplier $u$.
+By setting $\frac{d\mcL(\theta,z,u,v)}{d(z,u)} = 0$ and noting that
+$z_i = \softmax(\theta)_i = \exp(\theta_i) / \sum_j \exp(\theta_j)$,
+we have that $u = \log\sum_i\exp(\theta_i) + 1 = \lse(\theta) + 1$.
+
+Next, we examine the product $(I-\frac{dF(\theta,x)}{dx})^k$.
+Let us start with $n = 2$ and $k=2$:
+\begin{align*}
+\left(I-\frac{dF(\theta,x)}{dx}\right)^2
+&= \begin{bmatrix}
+    \diag(1+z^{-1}) & -\mathbf{1}_n & -I_n\\
+    -u\mathbf{1}_n^\top & 1 & \mathbf{0}_n^\top\\
+    \mathbf{0}_{n\times n} & 0 & \diag(1-z)
+\end{bmatrix}^2\\
+&= \begin{bmatrix}
+    1 + 1/z_1 & 0 & -1 & -1 & 0\\
+    0 & 1+1/z_2 & -1 & 0 & -1\\
+    -u & -u & 1 & 0 & 0\\
+    0 & 0 & 0 & 1-z_1 &0\\
+    0 & 0 & 0 & 0 & 1-z_2
+\end{bmatrix}^2\\
+&= \begin{bmatrix}
+    u + (1+1/z_1)^2 & u & -1/z_1 - 2 & z_1 - 1/z_1 & 0\\
+    u & u+(1+1/z_2)^2 & -1/z_2 - 2 & 0 & z_2-1/z_2-2\\
+    -u(1/z_1+2) & -u(1/z_2+2) & 2u+1 & u & u\\
+    0 & 0 & 0 & (1-z_1)^2 &0\\
+    0 & 0 & 0 & 0 & (1-z_2)^2
+\end{bmatrix}
+\end{align*}
+
+Unfortunately, this is both unstable due to division by $z_1$ and $z_2$,
+and also requires more operations than the first term $I-X$ (with $X=\frac{dF}{dx}$ for brevity)
+without a clear way of simplifying the sum $\sum_k (I-X)^k$.
+Thus, we find that the IFT and Neumann series approximation does not provide benefit over the direct
+derivative for softmax.
+Only the first-order approximation has fewer operations but large error.
+
+% input for mathematica
+% { {1 + 1/z_1, 0, -1, -1, 0}, {0, 1+(1/z_2), -1, 0, -1}, {-u, -u, 1, 0, 0}, {0,0,0,1-z_1,0}, {0,0,0,0,1-z_2} }^3
+
+\section{Structured Softmax}
 We now apply the IFT to differentiating through the marginals of
-structured latent variable models.
+structured distributions.
 
-Similar to the softmax case, we can compute both the solution and gradient
-exactly in time polynomial in $n$.
+Structured distributions extend softmax in fundamental way:
+Softmax scores each configuration globally, requiring an exponential amount of
+computation to compute the partition function.
+Structured distributions instead break down the scoring of configurations into local
+scoring functions, often resulting in the partition function being computable in
+polynomial time.
+In particular, we focus on the simple case of a first-order linear-chain CRF.
+{\color{red} Give details later.}
 
-\section{Network Traffic Problem}
-In this section, we consider the problem of optimizing network traffic.
-A network is a graph $G = (V,E)$ with vertices $v_i\in V$ and edges
-$e_{ij}\in E = V\times V$.
-We would like to maximize the total traffic through a series of $K$ paths across the network.
-A path is a sequence of edges $p_{st}^k = (e_{sv_1},e_{v_1v_2},\ldots,e_{v_mt})$
-from source vertex $s$ to target vertex $t$.
-A path contributes a constant amount of traffic $x_p$ to each included edge $e\in p$.
-We denote the set of paths that pass through a particular edge by
-$\pi(e) = \set{p \mid e \in p}$.
-We additionally have the following constraints: traffic must be nonnegative $x_p \geq 0$,
-and each edge has a capacity constraint that the total traffic on that
-edge cannot exceed $\sum_{p\in\pi(e)} x_p \le c_e$.
+Similar to the softmax case, we can compute both the marginals $z$ and the gradient
+of the marginals wrt the parameters $\frac{dz}{d\theta}$ exactly in time polynomial in $n$.
 
-This yields the following optimization problem:
-\begin{equation}
-\label{eqn:network-opt}
-\begin{aligned}
-\textrm{maximize } \quad & \sum_{p} x_p\\
-\textrm{subject to } &\sum_{p\in\pi(e)}x_p \le c_e, \forall e\\
-& x_p \geq 0, \forall p.
-\end{aligned}
-\end{equation}
 
-\section{Variational Inference}
-Variational inference has found success in recent applications to generative models,
-in particular by allowing practitioners to depart from conjugate models
-and extend emission models with expressive neural network components.
-The main insight that led to this development is that inference can be amortized through
-the use of an inference network.
-One approach to variational inference, stochastic variational inference (SVI),
-introduces local, independent variational parameters for every instance of hidden variable.
-While flexible, the storage of all variational parameters is expensive, and the optimization
-of each parameter independently slow \citep{}.
-Amortized variational inference (AVI) solves that by instead using a hierarchical process.
-Variational parameters are produced hierarchically via an inference network,
-which in turn generates the local variational parameters \citep{}.
-The resulting local parameters may or may not be subsequently optimized.
 
-Failure to further optimize local variational parameters may result in an amortization gap \citep{}.
-Prior work has shown that this gap can be ameliorated by performing a few steps of
-optimization on the generated local parameters obtained from the inference network,
-and even by propagating gradients through the optimization process.
-Optimizing through the inner optimization problem results in semi-amortized variational inference
-(SAVI) \citep{}.
-
-As our main motivating example, we will examine whether we can apply the IFT to SAVI.
-We will start by formalizing the problem of variational inference for a simple model.
-
-We will start with a model defined by the following generative process,
-used by \citet{dai2020vae} to analyze posterior collapse:
-\begin{enumerate}
-\item Choose a latent code from the prior distribution $z \sim p(z) = N(0, I)$.
-\item Given the code, choose an observation from the emission distribution
-    $x \mid z \sim p_\theta(x \mid z) = N(\mu_x(z, \theta), \gamma I)$,
-\end{enumerate}
-where $\mu_x(z, \theta) \equiv \MLP(z, \theta)$ and $\gamma > 0$ is a hyperparameter.
-This yields the joint distribution $p(x,z) = p(x\mid z)p(z)$.
-
-Since the latent code $z$ is unobserved, training this model would require optimizing the
-evidence $p(x) = \int p(x,z)$.
-However, due to the MLP parameterized $\mu_x$, the integral is intractable.
-Variational inference performs approximate inference by introducing variational distribution
-$q_\phi(z \mid x)$ and maximizing the following lower bound on $\log p(x)$:
-\begin{equation}
-    \log p(x) - \KL{q(z \mid x) || p(z \mid x)}
-    = \Es{q_\phi(z \mid x)}{\log \frac{p_\theta(x,z)}{q_\phi(z\mid x)}} = L(\theta, \phi).
-\end{equation}
-
-(Write out objective in full.)
-
-While SVI introduces local parameters for each instance of $z$,
-and AVI uses a single $q(z \mid x)$ for all instances,
-we will follow the approach of SAVI.
-We will perform inference as follows:
-For each instance $x$, produce local variational parameter
-$z^{(0)} = g(x; \phi)$.
-Obtain $z^*$ by solving $\mcL(\theta, z^{(0)}) = 2$, with (local) optima $\ell^*$.
-Take gradients through the whole procedure,
-i.e. compute $\frac{\partial \ell^*}{\partial \phi}
-= \frac{\partial\ell^*}{\partial z^*}\frac{\partial z^*}{\partial z^{(0)}}
-\frac{\partial z^{(0)}}{\partial \lambda}$.
-The main difficuty lies in computing $\frac{\partial z^*}{\partial z^{(0)}}$.
-(Highlight challenge)
-
-In order to avoid the memory costs of storing all intermediate computation performed
-in a solver, we will instead apply the IFT.
-In order to apply the IFT, we must satisfy the three conditions.
-First, we must have a solution point to a system of equations, $F(x_0, z_0) = 0$.
-In this setting, we will use the KKT conditions of the optimization problem to define $F$.
-
-\section{Limitations}
 
 \bibliography{bib}
 
