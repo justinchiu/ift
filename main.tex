@@ -753,14 +753,15 @@ resulting in SparseMax \citep{sparsemax}.
 While the output of softmax variants often have a closed form expression,
 the IFT provides another way of deriving their Jacobians
 and could potentially pave the way for differentiating through argmax problems
-that do not have closed-form expressions, e.g. for problems with complicated constraints.
+that do not have closed-form expressions,
+such as projections onto the $(n,k)-$simplex,
+which can be interpreted as selecting $k$ elements from $n$ \citep{rankmax}.
 
 More generally, the IFT can be applied to cases where, unlike softmax,
 we do not have an explicit functional form (i.e., the unit circle),
 and outputs are governed only by a system of equations.
 This includes more general optimization problems, such as quadratic programs \citep{optnet}
 or other convex optimization problems \citep{agrawal2019diffcvx}.
-%as well as the solutions of differential equations \citep{neuralode}.
 
 \section{OptNet}
 \label{sec:optnet}
@@ -843,6 +844,18 @@ by hand or numerically.
 \citet{optnet} also show how to obtain the vector-Jacobian product efficiently
 using quantities readily available from a QP solver.
 
+\section{Discussion}
+In this note, we walked through the application of the implicit function theorem
+to optimizing the parameters of an optimization problem, as a function of a solution.
+The process was quite involved, involving a large number of manual calculations.
+Ironically, this contrasts with the philosophy of \textbf{automatic} differentiation,
+which seeks to minimize user error by minimizing the number of manual calculations.
+Work by \citet{adift} seeks to address this via applying automatic differentiation to the
+system of equations central to the application of the IFT to bilevel optimization.
+We are excited to see where these methods find applications!
+
+\section*{Acknowledgements}
+We thank Yuntian Deng, Daniel Fried, Jack Morris, and Alexander Rush for helpful feedback.
 
 \bibliography{bib}
 \end{document}
