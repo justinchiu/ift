@@ -849,7 +849,12 @@ In this note, we walked through the application of the implicit function theorem
 to optimizing the parameters of an optimization problem, as a function of a solution.
 The process was quite involved, involving a large number of manual calculations.
 Ironically, this contrasts with the philosophy of \textbf{automatic} differentiation,
-which seeks to minimize user error by minimizing the number of manual calculations.
+which seeks to minimize user error by minimizing the number of manual calculations.\footnote{
+The degree of manual calculation in applying the IFT is unsurprising,
+as it generalizes forward and reverse-mode automatic differentation.
+\citet{griewank2008autodiff} show that we can derive forward and reverse-mode automatic differentiation
+from the IFT, through Schur-complements as we showed for the particular case of softmax.
+}
 Work by \citet{adift} seeks to address this via applying automatic differentiation to the
 system of equations central to the application of the IFT to bilevel optimization.
 We are excited to see where these methods find applications!
