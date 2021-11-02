@@ -86,7 +86,7 @@ In order to differentiate through this procedure with reverse-mode AD
 we have to store all the $x_k$ iterates
 as well the computation used to produce them.
 Thus, the memory complexity of storing this execution trace scales linearly in the
-number of iterations $K$ as well as the dimensionality of the iterates $x_k$\footnote{
+number of iterations $K$ as well as the dimensionality of the iterates $n=\dim(x_k)$\footnote{
 Forward-mode would get away from the linear dependence on $K$,
 but would require $n=\dim(\theta)$ sweeps.
 If all sweeps are performed in parallel,
@@ -100,6 +100,9 @@ letting you throw away intermediate computation (e.g. iterates $x_1$ through $x_
 while still being able to compute the derivative $\frac{dx}{d\theta}$.
 Naively, this comes at the cost of $O(n^2)$ space and $O(n^3)$ time,
 trading off the dependence on $K$ for a larger dependence on $n$.\footnote{
+The $O(n^2)$ space comes from a matrix-vector product,
+and the $O(n^3)$ time comes from matrix inversion,
+which will be become clear when we cover the IFT.
 This can be reduced by using approximate vector-inverse Hessian products,
 as we will show later in this report.
 }
@@ -124,7 +127,8 @@ We provide an illustration in Fig.~\ref{fig:optift}.
 \label{fig:optift}
 Reverse-mode automatic differentiation of an iterative method consumes memory
 linear in the number of iterations,
-illustrated by the squiggly line from initial point $\theta$ to the final point $x$.
+illustrated by the squiggly line (the path of the iterates)
+from initial point $\theta$ to the final point $x$.
 Such methods are not uncommon, found in bilevel optimization problems such as
 hyperparameter optimization and metalearning.
 The implicit function theorem (IFT)
@@ -254,13 +258,7 @@ we can compute the derivative at the solution point $p_1 = (\theta_1,x_1)$
 using the local parameterization (or solution mapping) $f_1(\theta)=\sqrt{1-x^2}$.
 This parameterization holds
 in a neighbourhood around $p_1$, visualized as an arc.
-We can use the IFT to compute
-$\frac{dx}{d\theta}= -\left[\frac{dF(\theta,x)}{dx}\right]^{-1}\frac{dF(\theta,x)}{d\theta}$,
-which will agree with the derivative of the local parameterization
-$\frac{df_1(\theta)}{d\theta}$.
 We cannot use the same parameterization at $p_2 = (\theta_2, 0)$ as the derivative is undefined.
-In general, the IFT is most useful in cases more complicated than the unit circle,
-where local parameterizations are too complex to easily write down.
 }
 \end{figure}
 
@@ -284,11 +282,13 @@ e.g. $\frac{dx}{d\theta}$ when $x=0$.
 These local parameterizations then allow us compute the derivative $\frac{dx}{d\theta}$
 locally at particular solution points $(\theta,x)$ using the corresponding parameterization.
 When the conditions of the IFT do not hold a particular point,
-we cannot use the IFT to ensure the existence of a local parameterization
-and therefore cannot use the IFT to compute derivatives.
-In general, this does not mean that the derivative does not exist,
-only that the IFT does not apply.
-See Fig.~\ref{fig:circle} for an illustration.
+there may still exist a local parameterization and derivative;
+however, we can neither use the IFT to guarantee the existence of the parameterization
+nor compute the derivative.
+See Fig.~\ref{fig:circle} for an illustration.\footnote{
+    We will see that the conditions of the IFT do not hold at $p_2 = (\theta_2, 0)$,
+    since the derivative is undefined at that point.
+}
 The IFT generalizes this example, and formalizes the conditions under which there exist
 continuous local parameterizations for a given relation or system of equations.
 
@@ -317,7 +317,8 @@ These conditions are as follows:
 \begin{enumerate}
 \item We have a solution point $(\theta, x)$ that satisfies the system of equations
     $F(\theta, x) = 0$.
-\item $F$ has at least continuous first derivatives: $F \in \mcC^1$.
+\item $F$ has at least continuous first derivatives: $F \in \mcC^1$,
+    the class of continuously differentiable functions.
 \item The Jacobian matrix
     of $F$ wrt $x$ evaluated at the solution point $(\theta,x)$ is nonsingular:
     $\det \frac{d F(\theta,x)}{d x} \neq 0$.
@@ -385,15 +386,15 @@ Softmax is often used to parameterize categorical distributions within neural ne
 such as in attention layers.
 Given $n$ items with independent utilities, where $\theta \in \R^n$
 indicate preferences,
-softmax gives the following distribution over items:
+the output of softmax gives the following distribution over items:
 $z_i = \softmax(\theta)_i = \frac{\exp(\theta_i)}{\sum_j \exp(\theta_j)}$, with $z\in[0,1]^n$.
 While there is a closed-form equation
-for both softmax and its Jacobian,
+for both the output of softmax as well as its Jacobian,
 we use it as an introduction to the mechanism
 behind OptNet (and other differentiable optimization layers)
 \citep{optnet,agrawal2019diffcvx}.
 
-The output of softmax is the solution of the following constrained optimization problem
+The output of softmax is also the solution of the following constrained optimization problem
 \citep{gao2018properties}:
 \begin{equation}
 \label{eqn:softmax-opt}
