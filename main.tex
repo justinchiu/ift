@@ -549,7 +549,7 @@ We saw a similar issue in the unit circle example, where the derivative
 $\frac{dx}{d\theta}$ was undefined when $x=0$ (see Fig.~\ref{fig:circle}).
 }
 Constraining to strict positivity for $z$,
-we can deduce that the Jacobian of $F$ is full rank and therefore has nonzero determinant.
+we can deduce that the Jacobian of $F$ is full rank and equivalently has nonzero determinant.
 This shows that the conditions of the IFT hold for the solution points that are
 feasible, optimal, and have strictly positive $z$.\footnote{
 Recall that the IFT applies at particular solution points,
@@ -690,7 +690,8 @@ This concludes the exercise of using the IFT to differentiate through the softma
 While softmax itself has a closed form expression for both its output and derivative,
 we showed that the IFT can also be used to compute its derivative in a solver-agnostic manner.
 We started by expressing softmax as an optimization problem (Eqn.~\ref{eqn:softmax-opt}),
-then, assuming we had a solution to the softmax problem (regardless of how it was obtained),
+then, assuming we had a solution to the softmax problem (regardless of whether it was obtained
+in closed-form or through an iterative method),
 reverse engineered a system of equations using the KKT conditions.
 We then restricted our attention to the set of solution points where we could succssfully
 apply the IFT,
@@ -714,7 +715,10 @@ However, the first part of $F$ (recall from Eqn.~\ref{eqn:system}), the stationa
 $\frac{d}{dx}\mcL = 0$
 already involved the Jacobian of the Lagrangian $\mcL$.
 In general, this means that in order to apply the IFT to solutions of optimization problems,
-we must compute the inverse Hessian of the Lagrangian (or at least an inverse Hessian-vector-product).
+we must compute the inverse Hessian of the Lagrangian.\footnote{
+From the IFT, we can either compute the full inverse Hessian or only the
+inverse Hessian-vector-product, which can sometimes be cheaply approximated.
+}
 The Hessian is a matrix of size $O(n^2)$,
 and inverting this would take $O(n^3)$ computation.\footnote{
 The number of solution variables scales with the number of primal variables,
