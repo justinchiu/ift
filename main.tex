@@ -80,7 +80,7 @@ whose execution trace takes the form of an unrolled loop:
 Given an initial point $\theta = x_0\in\R^n$,
 iterates $x_1, x_2, ..., x_{K-1}$ and final point $x=x_K$
 are produced by running the gradient descent
-update for $K$ iterations, i.e. $x_{t+1} = x_{t} + \alpha \nabla f(x_t)$.
+update for $K$ iterations, i.e. $x_{t+1} = x_{t} - \alpha \nabla f(x_t)$.
 In order to differentiate through this procedure with reverse-mode AD
 (i.e. compute $\frac{dx}{d\theta}$),
 we have to store all the $x_k$ iterates
@@ -255,7 +255,7 @@ and the pair $(\theta,x)$ is a solution point.
 Our goal is to compute the derivative $\frac{dx}{d\theta}$.
 While we cannot differentiate the relation $F$ directly as it is not a function,
 we can compute the derivative at the solution point $p_1 = (\theta_1,x_1)$
-using the local parameterization (or solution mapping) $f_1(\theta)=\sqrt{1-x^2}$.
+using the local parameterization (or solution mapping) $f_1(\theta)=\sqrt{1-\theta^2}$.
 This parameterization holds
 in a neighbourhood around $p_1$, visualized as an arc.
 We cannot use the same parameterization at $p_2 = (\theta_2, 0)$ as the derivative is undefined.
@@ -273,8 +273,8 @@ which can be interpreted as a system of equations.
 We would like to compute the derivative $\frac{dx}{d\theta}$.
 As $F$ fails the vertical line test, we cannot write $x$ as a function of $\theta$ globally
 and therefore cannot compute a derivative that holds globally.
-However, we can use local parameterizations: $f_1(\theta) = \sqrt{1-x^2}$ if $x > 0$
-or $f_2(\theta) = -\sqrt{1-x^2}$ if $x<0$.
+However, we can use local parameterizations: $f_1(\theta) = \sqrt{1-\theta^2}$ on the upper semicircle ($x>0$)
+or $f_2(\theta) = -\sqrt{1-\theta^2}$ on the lower semicircle ($x<0$).
 Note that the local parameterizations are functions that hold
 only within a neighbourhood of a particular solution point $(\theta,x)$;
 there may be solution points where we simply cannot compute a particular derivative,
@@ -321,7 +321,9 @@ These conditions are as follows:
     the class of continuously differentiable functions.
 \item The Jacobian matrix
     of $F$ wrt $x$ evaluated at the solution point $(\theta,x)$ is nonsingular:
-    $\det \frac{d F(\theta,x)}{d x} \neq 0$.
+    \[
+    \det \frac{d F(\theta,x)}{d x} \neq 0.
+    \]
 \end{enumerate}
 Assuming these conditions hold for $F$ at $(\theta,x)$, the IFT
 asserts the existence of the implicit solution mapping $x^*(\theta):\R^n\to\R^m$
@@ -457,7 +459,7 @@ are a natural choice for defining such a system of equations.
 Given an optimization problem, the KKT conditions
 determine a system of equations that the solution must satisfy
 based on the optimality criteria \citep{kkt-thesis,kkt}.
-They are stationarity (the gradient should be 0 at a local optima)
+They are stationarity (the gradient should be 0 at a local optimum)
 and feasibility (the constraints of the problem should not be violated).
 For a thorough introduction to the KKT conditions, see chapter 5 of \citet{bv-cvxbook}
 or the \href{https://en.wikipedia.org/wiki/Karush-Kuhn-Tucker\_conditions}{Wikipedia article}
@@ -473,8 +475,8 @@ We then have the following necessary conditions for a solution $(z,u,v)$,
 i.e. the KKT conditions:
 \begin{equation}
 \begin{aligned}
-\frac{d}{dx} \mcL(\theta, z,u,v) &= \mathbf{0}_n && \textrm{(stationarity)}\\
-u(z^{\top} \mathbf{1}_n - 1) &= 0 && \textrm{(primal feasibility, equality)}\\
+\frac{d}{dz} \mcL(\theta, z,u,v) &= \mathbf{0}_n && \textrm{(stationarity)}\\
+z^{\top} \mathbf{1}_n - 1 &= 0 && \textrm{(primal feasibility, equality)}\\
 \diag(v)z &= \mathbf{0}_{n} && \textrm{(complementary slackness)}\\
 z &\succeq \mathbf{0}_n && \textrm{(primal feasibility, inequality)}\\
 v &\succeq \mathbf{0}_n && \textrm{(dual feasibility)}
@@ -482,7 +484,7 @@ v &\succeq \mathbf{0}_n && \textrm{(dual feasibility)}
 \end{equation}
 As we only need a system of equations with $2n+1$ equations to
 determine the $2n+1$ solution variables $x=(z,u,v)$,
-we use the first three conditions: stationary, primal feasibility (equality),
+we use the first three conditions: stationarity, primal feasibility (equality),
 and complementary slackness.
 
 In full, the system of equations $F(\theta, z,u,v) = 0$ we choose
@@ -490,8 +492,8 @@ for the softmax problem is
 \begin{equation}
 \label{eqn:system}
 \begin{aligned}
-\theta + -\log(z) - \mathbf{1}_n + u\mathbf{1}_n + v &= \mathbf{0}_n\\
-u(z^{\top} \mathbf{1}_n - 1) &= 0\\
+\theta - \log(z) - \mathbf{1}_n + u\mathbf{1}_n + v &= \mathbf{0}_n\\
+z^{\top} \mathbf{1}_n - 1 &= 0\\
 \diag(v)z &= \mathbf{0}_n.
 \end{aligned}
 \end{equation}
@@ -499,7 +501,7 @@ Note that the first and third equations are vector-valued.
 
 This completes the second step, where we chose a subset of the KKT conditions
 in order to produce a nonlinear system of equations.
-We can now proceed check the conditions of the IFT,
+We can now proceed to check the conditions of the IFT,
 which will determine whether $F$ is locally well-behaved
 at a particular solution point $(\theta, z,u,v)$.
 
@@ -532,15 +534,15 @@ The Jacobian matrix $\frac{dF(\theta,z,u,v)}{d(z,u,v)}\in\R^{2n+1\times 2n+1}$ i
 \frac{dF(\theta,z,u,v)}{d(z,u,v)}=
 \begin{bmatrix}
 -\diag(z)^{-1} & \mathbf{1}_n & I_{n\times n} \\
-u\mathbf{1}_n^\top & z^\top\mathbf{1}_n - 1 & \mathbf{0}^\top_n\\
+\mathbf{1}_n^\top & 0 & \mathbf{0}^\top_n\\
 \diag(v) & \mathbf{0}_n & \diag(z)
 \end{bmatrix}.
 \end{equation}
-Since a solution must be feasible, we know that $z^\top\mathbf{1}-1=0$ and $u > 0$.
+Since a solution must be feasible, we know that $z^\top\mathbf{1}_n=1$.
 However, the upper left block, $\diag(z)^{-1}$, contains a divide-by-zero term if
 any component $z_i = 0$.\footnote{
 This term was obtained by differentiating the entropy
-term of the Lagrangian, $H(z) = \sum_i z_i\log z_i$.
+term of the Lagrangian, $H(z) = -\sum_i z_i\log z_i$.
 While we could use the convention $0\log 0 = 0$,
 this does not fix the divide-by-zero issue with the second derivative, which we see here.
 }
@@ -548,8 +550,23 @@ To avoid this, we consider only strictly positive $z \succ 0$ for the IFT.\footn
 We saw a similar issue in the unit circle example, where the derivative
 $\frac{dx}{d\theta}$ was undefined when $x=0$ (see Fig.~\ref{fig:circle}).
 }
-Constraining to strict positivity for $z$,
-we can deduce that the Jacobian of $F$ is full rank and equivalently has nonzero determinant.
+Strict positivity and complementary slackness imply $v=\mathbf{0}_n$,
+so the Jacobian reduces to a block upper-triangular matrix with lower-right block $\diag(z)$
+and upper-left block
+\[
+A = \begin{bmatrix}
+    -\diag(z)^{-1} & \mathbf{1}_n \\
+    \mathbf{1}_n^\top & 0
+\end{bmatrix}.
+\]
+Since $\diag(z)$ is invertible and the Schur complement of $A$ with respect to
+$-\diag(z)^{-1}$ is
+\[
+0 - \mathbf{1}_n^\top \left(-\diag(z)\right)\mathbf{1}_n
+= z^\top \mathbf{1}_n = 1,
+\]
+the block $A$ is invertible as well.
+Therefore, the Jacobian of $F$ is full rank and equivalently has nonzero determinant.
 This shows that the conditions of the IFT hold for the solution points that are
 feasible, optimal, and have strictly positive $z$.\footnote{
 Recall that the IFT applies at particular solution points,
@@ -575,7 +592,7 @@ Since $\theta$ only appears in the first vector-valued function of $F$
 \label{eqn:df-dtheta}
 \frac{dF(\theta,x)}{d\theta} = \begin{bmatrix}
     I_{n\times n}\\
-    \mathbf{0}_{(n+1)\times (n+1)}
+    \mathbf{0}_{(n+1)\times n}
 \end{bmatrix}.
 \end{equation}
 The large amount of sparsity allows us to skip some computation further down.
@@ -585,7 +602,7 @@ Next, we have to invert the Jacobian from Eqn.~\ref{eqn:f-jac}:
 \label{eqn:dsystem-matrix}
 \left[\frac{dF(\theta,x)}{dx}\right]^{-1} = \begin{bmatrix}
 -\diag(z)^{-1} & \mathbf{1}_n & I_{n\times n} \\
-u\mathbf{1}_n^\top & z^\top\mathbf{1}_n - 1 & 0\\
+\mathbf{1}_n^\top & 0 & 0\\
 \diag(v) & 0 & \diag(z)
 \end{bmatrix}^{-1}.
 \end{equation}
@@ -608,14 +625,14 @@ C & D
 \end{equation*}
 where
 \begin{align*}
-A = \begin{bmatrix} -\diag(z)^{-1} & \mathbf{1}_n \\ u\mathbf{1}_n^\top & 0 \end{bmatrix}&\qquad\qquad
+A = \begin{bmatrix} -\diag(z)^{-1} & \mathbf{1}_n \\ \mathbf{1}_n^\top & 0 \end{bmatrix}&\qquad\qquad
 B = \begin{bmatrix}I_{n\times n} \\ 0\end{bmatrix}\\
 C = \begin{bmatrix}\diag(v) & 0\end{bmatrix} &\qquad\qquad
 D = \diag(z).
 \end{align*}
-However, by complementary slackness, we have $v = 0$,\footnote{
+However, because $z\succ 0$, complementary slackness gives $v = 0$,\footnote{
 We apply the IFT to solutions where $z\succ 0$ due to a divide-by-zero issue
-in $\frac{d^2H(z)}{dz_i^2} = \frac{1}{z_i}$.
+in $\frac{\partial^2 H(z)}{\partial z_i^2} = -\frac{1}{z_i}$ for $H(z) = -\sum_j z_j \log z_j$.
 }
 reducing the above to
 \begin{equation*}
@@ -638,40 +655,43 @@ we only have to solve for the upper-left $n\times n$ block of $A^{-1}\in\R^{n+1\
 To do so, we will repeat the same block-wise inverse computation.
 Let us denote
 $$A
-= \begin{bmatrix} -\diag(z)^{-1} & \mathbf{1}_n \\ u\mathbf{1}_n^\top & 0 \end{bmatrix}
+= \begin{bmatrix} -\diag(z)^{-1} & \mathbf{1}_n \\ \mathbf{1}_n^\top & 0 \end{bmatrix}
 = \begin{bmatrix}E & F \\ G & H\end{bmatrix}.
 $$
 First, we compute the Schur complement of $A$,
 \begin{equation}
-A/E = H - GE^{-1}F = 0 + u\mathbf{1}_n^\top\diag(z)\mathbf{1}_n = uz^\top\mathbf{1}_n.
+A/E = H - GE^{-1}F = 0 - \mathbf{1}_n^\top(-\diag(z))\mathbf{1}_n = z^\top\mathbf{1}_n.
 \end{equation}
-Since $z$ is feasible, we have $A/E = u$ due to the equality constraints
+Since $z$ is feasible, we have $A/E = 1$ due to the equality constraints
 ($z$ must sum to 1 as a probability mass function).
 Then, we have
 \begin{equation}
-A^{-1} = \begin{bmatrix}
--\diag(z)^{-1} & \mathbf{1}_n\\
-u\mathbf{1}^\top_n & 0
-\end{bmatrix}^{-1}
-=\begin{bmatrix}E & F \\ G & H\end{bmatrix}^{-1}
-= \begin{bmatrix}
-E^{-1} + E^{-1}F(A/E)^{-1}GE^{-1} & -E^{-1}F(A/E)^{-1}\\
--(A/E)^{-1}GE^{-1} & (A/E)^{-1}
+\begin{aligned}
+A^{-1}
+&= \begin{bmatrix}
+    -\diag(z)^{-1} & \mathbf{1}_n\\
+    \mathbf{1}^\top_n & 0
+\end{bmatrix}^{-1}\\
+&= \begin{bmatrix}E & F \\ G & H\end{bmatrix}^{-1}\\
+&= \begin{bmatrix}
+    E^{-1} + E^{-1}F(A/E)^{-1}GE^{-1} & -E^{-1}F(A/E)^{-1}\\
+    -(A/E)^{-1}GE^{-1} & (A/E)^{-1}
 \end{bmatrix}.
+\end{aligned}
 \end{equation}
 Plugging in,
 \begin{equation}
 \begin{aligned}
 A^{-1} 
 &= \begin{bmatrix}
--\diag(z) + \diag(z)\mathbf{1}_nu^{-1}u\mathbf{1}^\top_n\diag(z)
-    & \diag(z)\mathbf{1}_nu^{-1}\\
--u^{-1}u\mathbf{1}^\top_n \diag(z) & u^{-1}
+    -\diag(z) + \diag(z)\mathbf{1}_n\mathbf{1}^\top_n\diag(z)
+    & \diag(z)\mathbf{1}_n\\
+    \mathbf{1}^\top_n \diag(z) & 1
 \end{bmatrix}\\
 &= \begin{bmatrix}
--\diag(z) + zz^\top
-    & u^{-1}z\\
-    -z^\top & u^{-1}
+    -\diag(z) + zz^\top
+    & z\\
+    z^\top & 1
 \end{bmatrix}.
 \end{aligned}
 \end{equation}
@@ -693,7 +713,7 @@ We started by expressing softmax as an optimization problem (Eqn.~\ref{eqn:softm
 then, assuming we had a solution to the softmax problem (regardless of whether it was obtained
 in closed-form or through an iterative method),
 reverse engineered a system of equations using the KKT conditions.
-We then restricted our attention to the set of solution points where we could succssfully
+We then restricted our attention to the set of solution points where we could successfully
 apply the IFT,
 then applied Eqn.~\ref{eqn:iftderiv} to compute the derivative at a solution point.
 
@@ -775,7 +795,7 @@ extending the optimization problems considered,
 in particular including parameterized constraints.
 This allows us to learn not only the objective, but also the constraints.
 Explicitly incorporating families of constraints in models
-with optimization layers to allows them to perform well
+with optimization layers allows them to perform well
 on tasks with rigid constraints, such as learning to play
 Sudoku from only inputs and outputs \citep{optnet}.
 
@@ -807,7 +827,7 @@ As the application of the IFT is very similar, we will not cover it in as much
 detail as the softmax problem.
 
 Similar to the softmax problem, we will first assume we already have a solution.
-Unlike in the softmax problem, we assume the the solution to the QP is provided by a solver,
+Unlike in the softmax problem, we assume the solution to the QP is provided by a solver,
 as there may not be a closed-form solution.\footnote{
 One contribution of OptNet was the extension of a state-of-the-art interior point
 solver \citep{optnet}, and its adaptation to parallel machines (GPUs) and batch processing.
@@ -831,7 +851,7 @@ This yields, written in full,
 \begin{aligned}
 Qz + q + G^\top u + A^\top v  &= \mathbf{0}_n\\
 \diag(u)(Gz-h) &= \mathbf{0}_p\\
-\diag(v)(Az-b) &= \mathbf{0}_m.
+Az-b &= \mathbf{0}_m.
 \end{aligned}
 \end{equation}
 
@@ -844,7 +864,8 @@ See Theorem 1 and its proof in the OptNet paper for more details \citep{optnet}.
 
 \subsection*{Step 4: Compute $\frac{dx}{d\theta}$}
 We would then compute
-$\frac{dx}{d\theta} = \left[\frac{dF(\theta,x)}{dx}\right]^{-1}\frac{dF(\theta,x)}{d\theta}$
+$\frac{dx}{d\theta} = -\left[\frac{dF(\theta,x)}{dx}\right]^{-1}\frac{dF(\theta,x)}{d\theta}$,
+matching Eqn.~\ref{eqn:iftderiv},
 by hand or numerically.
 \citet{optnet} also show how to obtain the vector-Jacobian product efficiently
 using quantities readily available from a QP solver.
@@ -856,7 +877,7 @@ The process was quite involved, involving a large number of manual calculations.
 Ironically, this contrasts with the philosophy of \textbf{automatic} differentiation,
 which seeks to minimize user error by minimizing the number of manual calculations.\footnote{
 The degree of manual calculation in applying the IFT is unsurprising,
-as it generalizes forward and reverse-mode automatic differentation.
+as it generalizes forward and reverse-mode automatic differentiation.
 \citet{griewank2008autodiff} show that we can derive forward and reverse-mode automatic differentiation
 from the IFT, through Schur-complements as we showed for the particular case of softmax.
 }
