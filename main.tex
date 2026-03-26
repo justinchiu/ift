@@ -739,7 +739,7 @@ In order to compute the derivative $\frac{dx}{d\theta}$, we had to invert the Ja
 i.e. compute $\left[\frac{dF(\theta,x)}{dx}\right]^{-1}$.
 However, the first part of $F$ (recall from Eqn.~\ref{eqn:system}), the stationarity condition
 $\frac{d}{dz}\mcL = 0$
-already involved the Jacobian of the Lagrangian $\mcL$.
+already involved derivatives of the Lagrangian $\mcL$ with respect to the primal variables.
 In general, this means that in order to apply the IFT to solutions of optimization problems,
 we must solve a linear system involving the Jacobian of the KKT conditions.\footnote{
 From the IFT, we can either work with the full inverse of this Jacobian
@@ -757,10 +757,11 @@ This potentially makes applying the IFT to optimization problems with exponentia
 many constraints difficult.
 }
 Thankfully, there are relatively cheap ways of approximating this computation,
-such as with approximate (inverse) Hessian-vector-product techniques
+such as with approximate inverse-matrix-vector-product techniques
 \citep{rajeswaran2019imaml,lorraine2019hoift}.
 \citet{lorraine2019hoift} in particular show that the derivative can be approximated
-in $O(n)$ space using a truncated Neumann series approximation for the inverse Hessian.
+in $O(n)$ space using a truncated Neumann series approximation for the inverse Hessian
+in the unconstrained setting.
 
 Additionally, comparing the speed of computing derivatives via AD on a large trace versus the IFT
 must be done on a case-by-case basis.
@@ -818,7 +819,7 @@ As the simplest nonlinear optimization problem,
 QPs strike a balance between expressivity and computational tractability \citep{simplex}.
 The methodology remains the same as the softmax problem:
 Given a QP and a solution,
-use the KKT conditions to produce a system of equations then apply the IFT
+use the KKT conditions to produce a system of equations, then apply the IFT
 to compute the derivative of the solution wrt the
 parameters of the objective and constraints.
 
@@ -871,7 +872,7 @@ Az-b &= \mathbf{0}_m.
 
 \subsection*{Step 3: Check the conditions of the IFT}
 As with the softmax problem,
-the only nontrivial part is checking that the Jacobian matrix of $\frac{dF(\theta,x)}{dx}$ is
+the only nontrivial part is checking that the Jacobian matrix $\frac{dF(\theta,x)}{dx}$ is
 not singular at the solution point(s) of interest $(\theta,x)$.
 This computation is more involved for QPs than the softmax problem. 
 See Theorem 1 and its proof in the OptNet paper for more details \citep{optnet}.
