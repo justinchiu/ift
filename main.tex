@@ -98,12 +98,14 @@ One method for overcoming the space complexity's dependence on the number of ite
 the above example is to use the implicit function theorem (IFT),
 letting you throw away intermediate computation (e.g. iterates $x_1$ through $x_{K-1}$)
 while still being able to compute the derivative $\frac{dx}{d\theta}$.
-Naively, this comes at the cost of $O(n^2)$ space and $O(n^3)$ time,
+Naively, if the Jacobian of the local system is dense, this comes at the cost of
+$O(n^2)$ space and $O(n^3)$ time,
 trading off the dependence on $K$ for a larger dependence on $n$.\footnote{
-The $O(n^2)$ space comes from a matrix-vector product,
-and the $O(n^3)$ time comes from matrix inversion,
-which will be become clear when we cover the IFT.
-This can be reduced by using approximate vector-inverse Hessian products,
+The $O(n^2)$ space comes from storing a dense $n\times n$ Jacobian
+(or a factorization thereof),
+and the $O(n^3)$ time comes from solving the associated dense linear system.
+This will become clear when we cover the IFT.
+This can be reduced by using approximate inverse-Jacobian or inverse-Hessian products,
 as we will show later in this report.
 }
 We provide an illustration in Fig.~\ref{fig:optift}.
@@ -701,10 +703,12 @@ the Jacobian $\frac{d z}{d\theta} = \diag(z) - zz^\top$,
 which agrees with directly differentiating softmax \citep{sparsemax}.
 While we were able to take advantage of sparsity in this computation,
 such sparsity may not be available in general.
-Without sparsity, inverting the Jacobian of $F$, $\frac{dF(\theta,x)}{dx}$,
-costs $O(n^3)$ time and $O(n^2)$ space
-compared to the $O(n)$ time and space for computing softmax and its
-derivative exactly (as well as with the IFT and sparsity).
+Without sparsity, solving the linear system defined by the Jacobian of $F$,
+$\frac{dF(\theta,x)}{dx}$, costs $O(n^3)$ time and $O(n^2)$ space in this
+softmax example, since $x=(z,u,v)$ has dimension $2n+1=O(n)$.
+By contrast, computing softmax itself or applying its Jacobian to a vector costs $O(n)$,
+while explicitly materializing the full Jacobian
+$\diag(z) - zz^\top$ costs $O(n^2)$ time and $O(n^2)$ space.
 
 This concludes the exercise of using the IFT to differentiate through the softmax problem.
 While softmax itself has a closed form expression for both its output and derivative,
@@ -720,8 +724,10 @@ then applied Eqn.~\ref{eqn:iftderiv} to compute the derivative at a solution poi
 We can immediately apply the methodology developed in this section to more general
 optimization problems, as we will explore in Sec.~\ref{sec:optnet}.
 In those problems closed form solutions may not exist, and iterative solvers must be used
-where applying reverse-mode AD would take $\Omega(Kn)$ space with $K$ steps,
-while the IFT would naively take $O(n^2)$ space.
+where unrolling $K$ solver steps and applying reverse-mode AD would take
+at least $\Omega(Kn)$ space when the iterates are $n$-dimensional,
+while naive implicit differentiation would instead store the dense Jacobian of the
+local system, taking $O(d^2)$ space for a $d$-dimensional system.
 
 %(Example showing build-up of memory from reversible SGD vs IFT would be nice here,
 %ie code it up and plot memory consumption / speed. maybe not best example though)
@@ -732,15 +738,19 @@ In order to compute the derivative $\frac{dx}{d\theta}$, we had to invert the Ja
 (the system of equations derived from the KKT conditions),
 i.e. compute $\left[\frac{dF(\theta,x)}{dx}\right]^{-1}$.
 However, the first part of $F$ (recall from Eqn.~\ref{eqn:system}), the stationarity condition
-$\frac{d}{dx}\mcL = 0$
+$\frac{d}{dz}\mcL = 0$
 already involved the Jacobian of the Lagrangian $\mcL$.
 In general, this means that in order to apply the IFT to solutions of optimization problems,
-we must compute the inverse Hessian of the Lagrangian.\footnote{
-From the IFT, we can either compute the full inverse Hessian or only the
-inverse Hessian-vector-product, which can sometimes be cheaply approximated.
+we must solve a linear system involving the Jacobian of the KKT conditions.\footnote{
+From the IFT, we can either work with the full inverse of this Jacobian
+or only the corresponding inverse-matrix-vector product,
+which can sometimes be cheaply approximated.
+In unconstrained problems this reduces to working with an inverse Hessian,
+while constrained problems lead to a larger KKT system that also includes dual variables.
 }
-The Hessian is a matrix of size $O(n^2)$,
-and inverting this would take $O(n^3)$ computation.\footnote{
+If this Jacobian/KKT matrix is dense and has dimension $d$,
+storing it costs $O(d^2)$ space
+and solving the corresponding linear system costs $O(d^3)$ time.\footnote{
 The number of solution variables scales with the number of primal variables,
 but also the number of constraints.
 This potentially makes applying the IFT to optimization problems with exponentially
@@ -754,9 +764,13 @@ in $O(n)$ space using a truncated Neumann series approximation for the inverse H
 
 Additionally, comparing the speed of computing derivatives via AD on a large trace versus the IFT
 must be done on a case-by-case basis.
-For softmax, let us pretend we solved the softmax problem with an iterative method in $K$ steps.
-Computing the derivative from the execution trace would take $O(Kn)$ time using reverse-mode AD,
-while the naive IFT would take $O(n^3)$ time, giving an asymptotic speedup only when $K > n^2$.
+For softmax, let us pretend we solved the softmax problem with an iterative method
+in $K$ steps, each costing $O(n)$ time.
+Computing the derivative from the execution trace would then take $O(Kn)$ time
+using reverse-mode AD,
+while the naive IFT would take $O(n^3)$ time because the KKT system has size $2n+1$.
+Under this simplified model, implicit differentiation is asymptotically faster
+only when $K > n^2$.
 In practice, the constant factors in the runtime will play a large factor in which approach
 is better, as well as any approximations made to make either approach more efficient\footnote{
 For unrolled AD, we could not fully solve the optimization problem and use the truncated trace.
